@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 from Bio import SeqIO
-import datetime, sys, re, subprocess, itertools, os, time, shutil, glob, pkg_resources, multiprocessing
+import datetime, sys, re, subprocess, itertools, os, time, shutil, glob, multiprocessing
 import pandas as pd
 from ete3 import NCBITaxa
 import requests
@@ -584,21 +584,12 @@ def main():
     """ BLASTn suite for apscale """
 
     message = """
-    ---------------------------------------------------------------------
-
-    APSCALE blast command line tool - v0.1 - 31/02/2024
-    
-    blastn help:
-      $ apscale_blast blastn -h
-    blastn example:
-      $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
-    filter help:
-      $ apscale_blast filter -h
-    filter example:
-      $ apscale_blast filter -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -blastn_folder ./12S_apscale_ESVs_blastn
-
-    ---------------------------------------------------------------------
-
+    APSCALE blast command line tool - v1.0.0 - 01/07/2024
+    Usage examples:
+    $ apscale_blast blastn -h
+    $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
+    $ apscale_blast filter -h
+    $ apscale_blast filter -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -blastn_folder ./12S_apscale_ESVs_blastn
     """
 
     print(message)
@@ -656,21 +647,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# Test
-# python3 apscale_blast.py blastn -database /Volumes/Coruscant/dbDNA/FEI_genera_v2_BarCodeBank/FEE_dbDNA_curated_database_v0.1 -query_fasta /Users/tillmacher/Desktop/Projects/physalia_2024/APSCALE_blastn/Karpfenteich_COI_apscale_OTUs.fasta -task megablast
-# python3 apscale_blast.py filter -database /Volumes/Coruscant/dbDNA/FEI_genera_v2_BarCodeBank/FEE_dbDNA_curated_database_v0.1 -blastn_folder /Users/tillmacher/Documents/GitHub/APSCALE_blast/blastn_Karpfenteich_COI_apscale_OTUs_06_30_24
-
-# Test
-# python3 apscale_blast.py blastn -database /Volumes/Coruscant/APSCALE_raw_databases/MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta /Users/tillmacher/Desktop/APSCALE_projects/MC_12SV5_apscale/7_otu_clustering/MC_12SV5_apscale_OTUs.fasta -task dc-megablast -subset_size 10
-# python3 apscale_blast.py filter -database /Users/tillmacher/Documents/GitHub/APSCALE_database_creator/MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -blastn_folder /Users/tillmacher/Documents/GitHub/APSCALE_blast/blastn_MC_12SV5_apscale_OTUs_01_31_24
-
-
-
-
-
-
-
-
-
-
