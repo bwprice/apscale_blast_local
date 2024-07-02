@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="APSCALE blast", # Replace with your own username
-    version="1.0.0",
+    version="0.1",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
     description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - Graphical User Interface",
@@ -14,20 +14,13 @@ setuptools.setup(
     url="https://github.com/pypa/apscale_blast",
     packages=setuptools.find_packages(),
     license='MIT',
-    install_requires=['pySimpleGUI >= 4.15.2',
-                      'apscale >= 1.5.5',
-                      'demultiplexer >= 1.1.0',
-                      'lastversion >= 1.3.3',
-                      'boldigger >= 1.2.5',
-                      'plotly >= 4.9.0',
-                      'requests >= 2.25.1',
-                      'requests_html >= 0.10.0',
-                      'kaleido >= 0.0.3',
-                      'xlsxwriter >= 3.0.2',
-                      'tqdm >= 4.60.0',
-                      'ete3 >= 3.1.2',
-                      'biopython >= 1.78',
-                      'xmltodict >= 0.12.0'
+    install_requires=[
+                    'Bio >= 1.7.1',
+                    'biopython >= 1.84',
+                    'joblib >= 1.4.2',
+                    'numpy >= 2.0.0',
+                    'pandas >= 2.2.2',
+                    'pyarrow >= 16.1.0',
                       ],
     include_package_data=True,
     classifiers=[

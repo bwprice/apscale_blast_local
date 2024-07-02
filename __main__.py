@@ -2,17 +2,14 @@ import argparse
 import os
 from pathlib import Path
 from Bio import SeqIO
-import datetime, sys, re, subprocess, itertools, os, time, shutil, glob, multiprocessing
+import datetime
+import subprocess
+import os
+import time
+import glob
+import multiprocessing
 import pandas as pd
-from ete3 import NCBITaxa
-import requests
-import xmltodict
-import PySimpleGUI as sg
 from pathlib import Path
-from tqdm import tqdm
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
-from requests_html import HTMLSession
 import numpy as np
 from joblib import Parallel, delayed
 import threading
@@ -431,6 +428,9 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     # split fasta file
     subset_folder = fasta_subset(query_fasta, subset_size)
 
+    ## convert to path
+    project_folder = Path(project_folder)
+
     # run blastn command in parallel for all fasta subsets
     fasta_files = sorted(glob.glob(str(subset_folder) + '/*.fasta'))
     n_subsets = len(fasta_files)
@@ -454,34 +454,22 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     db_folder = Path(blastn_database).joinpath('db')
 
     ## create a new folder for each blast search
-    blastn_search = Path('blastn_' + Path(query_fasta).stem + '_' + datetime.datetime.now().strftime('%D').replace('/', '_'))
-    if apscale_gui == True:
-        blastn_folder = Path(project_folder).joinpath('10_local_BLAST', blastn_search)
-        blastn_subset_folder = Path(blastn_folder).joinpath('subsets')
-    else:
-        blastn_folder = Path(project_folder).joinpath(blastn_search)
-        blastn_subset_folder = Path(blastn_folder).joinpath('subsets')
-    try:
-        os.mkdir(blastn_folder)
-    except FileExistsError:
-        pass
-    try:
+    blastn_subset_folder = Path(project_folder).joinpath('subsets')
+    if not os.path.isdir(blastn_subset_folder):
         os.mkdir(blastn_subset_folder)
-    except FileExistsError:
-        pass
 
     # PARALLEL BLASTN COMMAND
     Parallel(n_jobs = n_cores, backend='threading')(delayed(blastn_parallel)(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs) for i, fasta_file in enumerate(fasta_files))
 
     ## write the name of the database
-    blastn_log = blastn_folder.joinpath('log.txt')
+    blastn_log = project_folder.joinpath('log.txt')
     f = open(blastn_log, 'w')
     f.write('Your database: {}\n'.format(Path(blastn_database).stem))
     f.write('Your task: {}\n'.format(task))
     f.close()
 
     ## write all OTUs to a table (to search OTUs without a match
-    OTU_report = blastn_folder.joinpath('IDs.txt')
+    OTU_report = project_folder.joinpath('IDs.txt')
     f = open(OTU_report, 'w')
     with open(query_fasta) as handle:
         for record in SeqIO.parse(handle, "fasta"):
@@ -499,7 +487,7 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     # Convert the DataFrame to an Arrow Table
     table = pa.Table.from_pandas(df)
     # Write the Table to a Parquet file with Snappy compression
-    blastn_snappy = '{}/{}.parquet.snappy'.format(blastn_folder, filename)
+    blastn_snappy = '{}/{}.parquet.snappy'.format(project_folder, filename)
     pq.write_table(table, blastn_snappy, compression='snappy')
 
 def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
@@ -603,10 +591,10 @@ def main():
     filter_parser = subparsers.add_parser('filter',  help='Perform blastn filter on selected blast result folder. Blastn must be run first!')
 
     # GENERAL VARIABLES
-    blastn_parser.add_argument('-database', type=str, required=True, help='PATH to blastn database.')
+    blastn_parser.add_argument('-database', type=str, required=False, help='PATH to blastn database.')
     blastn_parser.add_argument('-apscale_gui', type=str, default=False, help='Can be ignored: Only required for APSCALE-GUI.')
 
-    filter_parser.add_argument('-database', type=str, required=True, help='PATH to blastn database.')
+    filter_parser.add_argument('-database', type=str, required=False, help='PATH to blastn database.')
     filter_parser.add_argument('-apscale_gui', type=str, default=False, help='Can be ignored: Only required for APSCALE-GUI.')
 
     ## VARIABLES FOR BLASTN
@@ -624,6 +612,19 @@ def main():
     filter_parser.add_argument('-n_cores', type=int, default=multiprocessing.cpu_count() - 1, help='Number of cores to use. [DEFAULT: CPU count - 1]')
 
     args = parser.parse_args()
+
+    ## if no args are given ask for database, query_fasta, or blastn_folder
+    if args.command == 'blastn' and args.database == None and args.query_fasta == None:
+        args.database = input("Please enter PATH to database: ")
+        args.query_fasta = input("Please enter PATH to query fasta: ")
+        if args.out == './':
+            args.out = str(args.query_fasta).replace('.fasta', '')
+            if not os.path.isdir(args.out):
+                os.mkdir(Path(args.out))
+
+    if args.command == 'filter' and args.database == None and args.blastn_folder == None:
+        args.database = input("Please enter PATH to database: ")
+        args.blastn_folder = input("Please enter PATH to blastn folder: ")
 
     ## BLASTN
     if args.command == 'blastn':
