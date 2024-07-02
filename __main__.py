@@ -8,6 +8,7 @@ import os
 import time
 import glob
 import multiprocessing
+multiprocessing.freeze_support()
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -254,7 +255,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
     blast_df = pd.read_csv(file, header=None, sep=';;', names=col_names, engine='python').fillna('NAN')
     blast_df['Similarity'] = [float(i) for i in blast_df['Similarity'].values.tolist()]
     all_OTUs = blast_df['ID'].drop_duplicates().tolist()
-    rating_snappy = Path('/Volumes/Coruscant/dbDNA/FEI_genera_BarCodeBank/3_BarCodeBank/FEI_genera.BarCodeBank.parquet.snappy')
+    rating_snappy = Path('/Volumes/Coruscant/dbDNA/FEI_genera_v2_BarCodeBank/3_BarCodeBank/FEI_genera_v2.BarCodeBank.parquet.snappy')
     rating_df = pd.read_parquet(rating_snappy)
 
     ## collect information about the hits
@@ -617,6 +618,12 @@ def main():
     if args.command == 'blastn' and args.database == None and args.query_fasta == None:
         args.database = input("Please enter PATH to database: ")
         args.query_fasta = input("Please enter PATH to query fasta: ")
+
+        args.database = args.database.strip('"')
+        args.query_fasta = args.query_fasta.strip('"')
+
+        print(args.query_fasta)
+
         if args.out == './':
             args.out = str(args.query_fasta).replace('.fasta', '')
             if not os.path.isdir(args.out):
@@ -630,6 +637,9 @@ def main():
     if args.command == 'blastn':
         if args.query_fasta:
             project_folder = args.out
+            ## on windows the " must be removed
+            args.database = args.database.strip('"')
+            args.query_fasta = args.query_fasta.strip('"')
             blastn_v2(args.blastn_exe, args.query_fasta, args.database, project_folder, args.n_cores, args.task, args.subset_size, args.max_target_seqs, args.apscale_gui)
         else:
             print('\nError: Please provide a fasta file!')
@@ -637,6 +647,9 @@ def main():
     ## FILTER
     elif args.command == 'filter':
         if args.blastn_folder:
+            ## on windows the " must be removed
+            args.database = args.database.strip('"')
+            args.blastn_folder = args.blastn_folder.strip('"')
             thresholds = args.thresholds.split(',')
             if len(thresholds) != 5:
                 print('Please provide 5 comma separated values!')
