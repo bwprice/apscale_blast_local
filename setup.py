@@ -4,21 +4,21 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="APSCALE blast", # Replace with your own username
-    version="0.1",
+    name="apscale_blast", # Replace with your own username
+    version="0.1.5",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
-    description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - Graphical User Interface",
+    description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/apscale_blast",
+    url="https://pypi.org/project/apscale-blast/",
     packages=setuptools.find_packages(),
     license='MIT',
     install_requires=[
                     'Bio >= 1.7.1',
                     'biopython >= 1.84',
                     'joblib >= 1.4.2',
-                    'numpy >= 2.0.0',
+                    'numpy',
                     'pandas >= 2.2.2',
                     'pyarrow >= 16.1.0',
                       ],
@@ -31,7 +31,7 @@ setuptools.setup(
     python_requires='>=3.10',
     entry_points={
         "console_scripts": [
-            "apscale_blast = apscale_gui.__main__:main",
+            "apscale_blast = apscale_blast.__main__:main",
         ]
     },
 )

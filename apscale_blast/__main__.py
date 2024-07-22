@@ -82,13 +82,14 @@ def accession2taxonomy(df_1, taxid_dict, col_names_2):
     df_2_list = []
     for row in df_1.values.tolist():
         ID_name = row[0]
-        accession = row[1].split(".")[0] + '.' + row[1].split(".")[1]
+        accession = row[1].split('|')[1] + '.1'
+        # accession = row[1].split(".")[0] + '.' + row[1].split(".")[1]
         evalue = row[-1]
         similarity = row[-2]
         try:
             taxonomy = taxid_dict[accession]
         except KeyError:
-            taxonomy = ['No Match'] * 7
+            taxonomy = ['NoMatch'] * 7
         df_2_list.append([ID_name] + taxonomy + [similarity, evalue])
     df_2 = pd.DataFrame(df_2_list, columns=col_names_2)
     return df_2
@@ -241,7 +242,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
     # export dataframe
     taxonomy_df.columns = ['ID', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species', 'Similarity', 'evalue', 'Flag', 'Ambigous taxa']
     blastn_filtered_xlsx = file.replace('.csv', '_filtered.xlsx')
-    taxonomy_df.to_excel(blastn_filtered_xlsx, index=False)
+    taxonomy_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
     print('{}: Finished filtering for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
 
@@ -416,7 +417,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
 
     # write dataframe
     blastn_filtered_xlsx = file.replace('.csv', '_filtered.xlsx')
-    blast_filtered_df_sorted.to_excel(blastn_filtered_xlsx, index=False)
+    blast_filtered_df_sorted.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
     ## finish command
     print('{}: Finished filtering for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
@@ -563,9 +564,10 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
 
     output_df = pd.DataFrame(output_df_list, columns=merged_df.columns.tolist())
     output_df['sort'] = [int(i.split('_')[-1]) for i in output_df['ID'].values.tolist()]
+    output_df['Status'] = 'apscale blast'
     output_df = output_df.sort_values(['sort'])
     output_df = output_df.drop(columns=['sort'])
-    output_df.to_excel(blastn_filtered_xlsx, index=False)
+    output_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
     print('{}: Finished to filter blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
 
@@ -659,5 +661,7 @@ def main():
         else:
             print('\nError: Please provide a blast results file folder (.csv)!')
 
+## run only if called as toplevel script
 if __name__ == "__main__":
     main()
+
