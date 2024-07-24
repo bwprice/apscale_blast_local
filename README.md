@@ -42,6 +42,10 @@ from anywhere on the system. However, a PATH to the executable can also be provi
 
 You can find the latest blast+ executables and further information on the installation [here](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/).
 
+IMPORTANT: Please cite the blast+ software.
+
+Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., & Madden, T. L. (2009). BLAST+: Architecture and applications. BMC Bioinformatics, 10, 421. https://doi.org/10.1186/1471-2105-10-421
+
 ### Available databases
 
 Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using the <i> database_creator.py </i> script (soon available here).
