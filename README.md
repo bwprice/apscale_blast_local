@@ -23,7 +23,7 @@ Apscale-blast requires Python 3.10 or higher and can be easily installed via pip
 
 `pip install apscale-blast`
 
-To update apscale run:
+To update apscale-blast run:
 
 `pip install --upgrade apscale-blast`
 
