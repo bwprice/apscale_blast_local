@@ -50,7 +50,7 @@ Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., &
 
 Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using the <i> database_creator.py </i> script (soon available here).
 
-The Pre-compiled databases are available under the following [server](https://seafile.rlp.net/d/754a25aa76e44b2381b6/).
+The pre-compiled databases are available under the following [server](https://seafile.rlp.net/d/754a25aa76e44b2381b6/). The pre-compiled databases will be updated regularly.
 
 IMPORTANT: Please cite the used database accordingly!
 
