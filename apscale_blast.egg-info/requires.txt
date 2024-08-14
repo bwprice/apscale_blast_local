@@ -1,0 +1,6 @@
+Bio>=1.7.1
+biopython>=1.84
+joblib>=1.4.2
+numpy
+pandas>=2.2.2
+pyarrow>=16.1.0

@@ -1,0 +1,23 @@
+Metadata-Version: 2.1
+Name: apscale_blast
+Version: 1.0.0
+Summary: Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application
+Home-page: https://pypi.org/project/apscale-blast/
+Author: Till-Hendrik Macher
+Author-email: macher@uni-trier.de
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: Bio>=1.7.1
+Requires-Dist: biopython>=1.84
+Requires-Dist: joblib>=1.4.2
+Requires-Dist: numpy
+Requires-Dist: pandas>=2.2.2
+Requires-Dist: pyarrow>=16.1.0
+
+# APSCALE blast
+ 

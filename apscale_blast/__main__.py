@@ -4,7 +4,7 @@ from pathlib import Path
 from Bio import SeqIO
 import datetime
 import subprocess
-import os
+import os, shutil
 import time
 import glob
 import multiprocessing
@@ -16,25 +16,6 @@ from joblib import Parallel, delayed
 import threading
 import pyarrow as pa
 import pyarrow.parquet as pq
-
-################################################################################
-## VERSION 2
-
-# sub functions
-
-def read_table_to_fasta(read_table):
-    read_table = '/Users/tillmacher/Downloads/sarah_shark_lib_apscale_OTU_table.xlsx'
-    df = pd.read_excel(read_table)
-
-    fasta_file = '/Users/tillmacher/Downloads/sarah_shark_lib_apscale_OTU_table.fasta'
-    with open(fasta_file, 'w') as f:
-        for row in df.values.tolist():
-            ID = row[0]
-            seq = row[-1]
-            header = f'>{ID}\n'
-            sequence = f'{seq}\n'
-            f.write(header)
-            f.write(sequence)
 
 def fasta_subset(fasta_file, subset_size):
 
@@ -74,16 +55,34 @@ def fasta_subset(fasta_file, subset_size):
             else:
                 n += 1
 
-    return Path(fasta_file.parent).joinpath('fasta_subsets')
-
     print('{} : Created {} subset(s) from fasta file.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i))
 
-def accession2taxonomy(df_1, taxid_dict, col_names_2):
+    return Path(fasta_file.parent).joinpath('fasta_subsets')
+
+def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
     df_2_list = []
     for row in df_1.values.tolist():
         ID_name = row[0]
-        accession = row[1].split('|')[1] + '.1'
-        # accession = row[1].split(".")[0] + '.' + row[1].split(".")[1]
+
+        if 'db_MIDORI2' in db_name:
+            # row = ['test', 'GU981053.1.<1.>964###root_1;Eukaryota_2759;Chordata_7711;Mammalia_40674;Eulipotyphla_9362;Soricidae_9376;Neomys_52813;Neomys_fodiens_62282', 100, 0.005]
+            accession = row[1].split(".")[0] + '.' + row[1].split(".")[1]
+
+        if 'db_PR2' in db_name:
+            # row = ['test', "HQ446279.1.1754_U;tax=k:Eukaryota,d:TSAR,p:Alveolata-Ciliophora,c:Oligohymenophorea,o:Astomatia,f:Astomatida,g:Astomatida_X,s:Astomatida_X_sp.", 100, 0.005]
+            accession = row[1].split('|')[1] + '.1'
+
+        if 'db_SILVA' in db_name:
+            # row = ['test', "HQ446279.1.1754_U;tax=k:Eukaryota,d:TSAR,p:Alveolata-Ciliophora,c:Oligohymenophorea,o:Astomatia,f:Astomatida,g:Astomatida_X,s:Astomatida_X_sp.", 100, 0.005]
+            accession = row[1].split('|')[1] + '.1'
+
+        if 'db_UNITE' in db_name:
+            # row = 'Pezizaceae_sp|UDB04315424|SH0970857.10FU|reps|k__Fungi;p__Ascomycota;c__Pezizomycetes;o__Pezizales;f__Pezizaceae;g__Pezizaceae_gen_Incertae_sedis;s__Pezizaceae_sp'
+            accession = row[1].split('|')[1]
+
+        if 'db_DIATBARCODE' in db_name:
+            accession = row[1]
+
         evalue = row[-1]
         similarity = row[-2]
         try:
@@ -112,10 +111,12 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
         with print_lock:
             print('{}: Finished blastn for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i+1, n_subsets))
 
-def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
+def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
+
+    # file = '/Users/tillmacher/Desktop/APSCALE_projects/test_apscale/11_NCBI_BLAST/klimawerk_apscale_OTUs_filtered/subsets/subset_1_blastn.csv'
 
     ## load blast results
-    col_names = ['ID', 'Sequence ID', 'Similarity', 'evalue']
+    col_names = ['unique ID', 'Sequence ID', 'Similarity', 'evalue']
     csv_df = pd.read_csv(file, header=None, sep=';;', names=col_names, engine='python').fillna('NAN')
     csv_df['Similarity'] = [float(i) for i in csv_df['Similarity'].values.tolist()]
 
@@ -126,15 +127,15 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
     class_threshold = int(thresholds[4])
 
     ## filter hits
-    ID_set = csv_df['ID'].drop_duplicates().values.tolist()
-    col_names_2 = ['ID', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species', 'Similarity', 'evalue']
+    ID_set = csv_df['unique ID'].drop_duplicates().values.tolist()
+    col_names_2 = ['unique ID', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species', 'Similarity', 'evalue']
     taxonomy_df = pd.DataFrame()
 
     # loop through IDs
     # ID ='OTU_99'
     for ID in ID_set:
         ## filter by evalue
-        df_0 = csv_df.loc[csv_df['ID'] == ID]
+        df_0 = csv_df.loc[csv_df['unique ID'] == ID]
         max_sim = max(df_0['Similarity'])
 
         ##### 1) FILTERING BY SIMILARITY THEN BY EVALUE (or the other way round, let the user decide)
@@ -144,7 +145,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
 
         ############################################################################################################
         ## convert fasta headers to taxonomy
-        df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2)
+        df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2, db_name)
 
         ############################################################################################################
 
@@ -240,7 +241,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
                     taxonomy_df = pd.concat([taxonomy_df, df_3])
 
     # export dataframe
-    taxonomy_df.columns = ['ID', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species', 'Similarity', 'evalue', 'Flag', 'Ambigous taxa']
+    taxonomy_df.columns = ['unique ID', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species', 'Similarity', 'evalue', 'Flag', 'Ambigous taxa']
     blastn_filtered_xlsx = file.replace('.csv', '_filtered.xlsx')
     taxonomy_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
@@ -248,21 +249,18 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds):
 
 def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
 
-    # file = '/Users/tillmacher/Documents/GitHub/APSCALE_blast/blastn_Karpfenteich_COI_apscale_OTUs_06_30_24/subsets/subset_1_megablast.csv'
-    # i = 1
-
     ## load results
-    col_names = ['ID', 'Sequence ID', 'Similarity', 'evalue']
+    col_names = ['unique ID', 'Sequence ID', 'Similarity', 'evalue']
     blast_df = pd.read_csv(file, header=None, sep=';;', names=col_names, engine='python').fillna('NAN')
     blast_df['Similarity'] = [float(i) for i in blast_df['Similarity'].values.tolist()]
-    all_OTUs = blast_df['ID'].drop_duplicates().tolist()
+    all_OTUs = blast_df['unique ID'].drop_duplicates().tolist()
     rating_snappy = Path('/Volumes/Coruscant/dbDNA/FEI_genera_v2_BarCodeBank/3_BarCodeBank/FEI_genera_v2.BarCodeBank.parquet.snappy')
     rating_df = pd.read_parquet(rating_snappy)
 
     ## collect information about the hits
     reference_list = []
     for OTU in all_OTUs:
-        tmp = blast_df.loc[blast_df['ID'] == OTU].sort_values('evalue', ascending=True)
+        tmp = blast_df.loc[blast_df['unique ID'] == OTU].sort_values('evalue', ascending=True)
         max_similarity = max(tmp['Similarity'])
         tmp = tmp.loc[tmp['Similarity'] == max_similarity]
         hits = tmp['Sequence ID'].values.tolist()[:20]
@@ -278,9 +276,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
                 reference_list.append([OTU, max_similarity] + reference)
 
     # store intermediate results
-    reference_df = pd.DataFrame(reference_list, columns=['ID', 'Similarity'] + rating_df.columns.tolist())
-    # reference_df.to_excel('/Volumes/Coruscant/dbDNA/FEI_genera_BarCodeBank/tmp.xlsx', index=False)
-    # reference_df = pd.read_excel('/Users/tillmacher/Desktop/Projects/dbDNA/Test_BarCodeBank/tmp.xlsx').fillna('')
+    reference_df = pd.DataFrame(reference_list, columns=['unique ID', 'Similarity'] + rating_df.columns.tolist())
 
     # filter results
     gold_threshold = 40
@@ -295,7 +291,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
     blast_filtered_list = []
 
     for OTU in all_OTUs:
-        tmp = reference_df.loc[reference_df['ID'] == OTU].copy()
+        tmp = reference_df.loc[reference_df['unique ID'] == OTU].copy()
         species = tmp['species_name']
         n_hits = len(species)
         similarity = tmp['Similarity'].drop_duplicates().values.tolist()[0]
@@ -341,7 +337,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
 
         # Export hit
         blast_hit = []
-        relevant_columns = ['ID', 'Similarity',
+        relevant_columns = ['unique ID', 'Similarity',
                             'rating', 'bin_uri',
                             'phylum_name', 'class_name',
                             'order_name', 'family_name',
@@ -378,7 +374,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
         blast_filtered_list.append(blast_hit + [rating_str])
 
     # create a dataframe
-    columns = ['ID', 'Similarity',
+    columns = ['unique ID', 'Similarity',
                 'rating', 'bin_uri',
                 'Phylum', 'all_phyla',
                 'Class', 'all_classes',
@@ -398,7 +394,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
     blast_filtered_df.loc[blast_filtered_df['Species'] == '', 'bin_uri'] = ''
 
     # sort dataframe to TaXon table format compatible table
-    sorted_columns = ['ID', 'Phylum',
+    sorted_columns = ['unique ID', 'Phylum',
                 'Class', 'Order',
                 'Family', 'Genus',
                 'Species', 'Similarity',
@@ -421,8 +417,6 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
 
     ## finish command
     print('{}: Finished filtering for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
-
-# main functions
 
 def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, apscale_gui):
     """ New version of blast that makes better use of multithreading by running multiple blast searches in parallel """
@@ -484,13 +478,16 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     # List of CSV file names
     csv_files = glob.glob('{}/*.csv'.format(str(blastn_subset_folder)))
     # Read and concatenate all CSV files into a single DataFrame
-    col_names = ['ID', 'Sequence ID', 'Similarity', 'evalue']
+    col_names = ['unique ID', 'Sequence ID', 'Similarity', 'evalue']
     df = pd.concat((pd.read_csv(f, header=None, sep=';;', names=col_names, engine='python').fillna('NAN') for f in csv_files))
     # Convert the DataFrame to an Arrow Table
     table = pa.Table.from_pandas(df)
     # Write the Table to a Parquet file with Snappy compression
     blastn_snappy = '{}/{}.parquet.snappy'.format(project_folder, filename)
     pq.write_table(table, blastn_snappy, compression='snappy')
+
+    ## remove subset fasta folder
+    shutil.rmtree(subset_folder)
 
 def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
     """ Filter results according to Macher et al., 2023 (Fish Mock Community paper) """
@@ -500,6 +497,9 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
 
     ## load blast results
     csv_files = glob.glob('{}/subsets/*.csv'.format(blastn_folder))
+
+    ## collect name of database
+    db_name = Path(blastn_database).stem
 
     ## check if a dbDNA database was used
     if "_dbDNA" in blastn_database:
@@ -517,7 +517,9 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
 
         # PARALLEL FILTER COMMAND
         n_subsets = len(csv_files)
-        Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds) for i, file in enumerate(csv_files))
+        # file = csv_files[0]
+        # i = 1
+        Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files))
 
         ## also already define the no match row
         NoMatch = ['NoMatch'] * 7 + [0, 1, '', '']
@@ -551,22 +553,19 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
 
     # Check if each ID is already in the DataFrame
     for ID in IDs:
-        if ID not in merged_df['ID'].values.tolist():
+        if ID not in merged_df['unique ID'].values.tolist():
             # Create a new row with the ID and other relevant information
             row = [ID] + NoMatch
             output_df_list.append(row)
         else:
-            row = merged_df.loc[merged_df['ID'] == ID].values.tolist()[0]
+            row = merged_df.loc[merged_df['unique ID'] == ID].values.tolist()[0]
             output_df_list.append(row)
 
     ## sort table
     merged_df.columns.tolist()
 
     output_df = pd.DataFrame(output_df_list, columns=merged_df.columns.tolist())
-    output_df['sort'] = [int(i.split('_')[-1]) for i in output_df['ID'].values.tolist()]
     output_df['Status'] = 'apscale blast'
-    output_df = output_df.sort_values(['sort'])
-    output_df = output_df.drop(columns=['sort'])
     output_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
     print('{}: Finished to filter blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
