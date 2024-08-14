@@ -33,7 +33,7 @@ Apscale-blast is also available as executable file that does not require the ins
 Please make sure to add the executable to the whitelist of your anti-virus software, otherwise the apscale-blast
 will be blocked or deleted.
 
-Distributables are available [here](https://seafile.rlp.net/d/754a25aa76e44b2381b6/).
+Distributables will soon be available [here](https://seafile.rlp.net/d/754a25aa76e44b2381b6/).
 
 ### Further dependencies - blast+
 
