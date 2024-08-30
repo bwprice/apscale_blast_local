@@ -21,11 +21,11 @@ Output:
 Apscale-blast can be installed on all common operating systems (Windows, Linux, MacOS).
 Apscale-blast requires Python 3.10 or higher and can be easily installed via pip in any command line:
 
-`pip install apscale-blast`
+`pip install apscale_blast`
 
 To update apscale-blast run:
 
-`pip install --upgrade apscale-blast`
+`pip install --upgrade apscale_blast`
 
 ## Distributables
 
@@ -82,15 +82,15 @@ Rimet, F., Gusev, E., Kahlert, M., Kelly, M. G., Kulikovskiy, M., Maltsev, Y., M
 
 * Open a terminal, powershell, or command line window. Then, execute the following command:
 
-`apscale-blast blastn`
+`apscale_blast blastn`
 
 #### Executable
 
 * Open a terminal, powershell, or command line window. Navigate to the folder where the executable is located. Then, execute the following command:
 
-Windows: `./apscale-blast.exe blastn`
+Windows: `./apscale_blast.exe blastn`
 
-MacOS: `./apscale-blast blastn`
+MacOS: `./apscale_blast blastn`
 
 #### Blastn search
 
@@ -125,13 +125,13 @@ MacOS: `./apscale-blast blastn`
 
 * Execute apscale-blast again and call the filter module:
 
-`apscale-blast filter`
+`apscale_blast filter`
 
 or 
 
-Windows: `./apscale-blast.exe filter`
+Windows: `./apscale_blast.exe filter`
 
-MacOS: `./apscale-blast filter`
+MacOS: `./apscale_blast filter`
 
 * You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
 
@@ -173,7 +173,7 @@ MacOS: `./apscale-blast filter`
 
 ## Options
 
-### apscale-blast blastn
+### apscale_blast blastn
 
 options:
 
@@ -198,7 +198,7 @@ options:
   -max_target_seqs MAX_TARGET_SEQS -> Number of hits retained from the blast search. Larger numbers will increase runtimes and required storage space [DEFAULT: 20]
 
 
-### apscale-blast filter
+### apscale_blast filter
 
 options:
 
