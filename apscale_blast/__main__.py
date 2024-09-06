@@ -63,25 +63,7 @@ def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
     df_2_list = []
     for row in df_1.values.tolist():
         ID_name = row[0]
-
-        if 'db_MIDORI2' in db_name:
-            # row = ['test', 'GU981053.1.<1.>964###root_1;Eukaryota_2759;Chordata_7711;Mammalia_40674;Eulipotyphla_9362;Soricidae_9376;Neomys_52813;Neomys_fodiens_62282', 100, 0.005]
-            accession = row[1].split(".")[0] + '.' + row[1].split(".")[1]
-
-        if 'db_PR2' in db_name:
-            # row = ['test', "HQ446279.1.1754_U;tax=k:Eukaryota,d:TSAR,p:Alveolata-Ciliophora,c:Oligohymenophorea,o:Astomatia,f:Astomatida,g:Astomatida_X,s:Astomatida_X_sp.", 100, 0.005]
-            accession = row[1].split('|')[1] + '.1'
-
-        if 'db_SILVA' in db_name:
-            # row = ['test', "HQ446279.1.1754_U;tax=k:Eukaryota,d:TSAR,p:Alveolata-Ciliophora,c:Oligohymenophorea,o:Astomatia,f:Astomatida,g:Astomatida_X,s:Astomatida_X_sp.", 100, 0.005]
-            accession = row[1].split('|')[1] + '.1'
-
-        if 'db_UNITE' in db_name:
-            # row = 'Pezizaceae_sp|UDB04315424|SH0970857.10FU|reps|k__Fungi;p__Ascomycota;c__Pezizomycetes;o__Pezizales;f__Pezizaceae;g__Pezizaceae_gen_Incertae_sedis;s__Pezizaceae_sp'
-            accession = row[1].split('|')[1]
-
-        if 'db_DIATBARCODE' in db_name:
-            accession = row[1]
+        accession = row[1]
 
         evalue = row[-1]
         similarity = row[-2]
@@ -113,7 +95,7 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
 
 def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
 
-    # file = '/Users/tillmacher/Desktop/APSCALE_projects/test_apscale/11_NCBI_BLAST/klimawerk_apscale_OTUs_filtered/subsets/subset_1_blastn.csv'
+    # file = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09_verification/db_MIDORI2_UNIQ_NUC_SP_GB261_srRNA_BLAST/subsets/subset_1_blastn.csv'
 
     ## load blast results
     col_names = ['unique ID', 'Sequence ID', 'Similarity', 'evalue']
@@ -574,7 +556,7 @@ def main():
     """ BLASTn suite for apscale """
 
     message = """
-    APSCALE blast command line tool - v1.0.0 - 01/07/2024
+    APSCALE blast command line tool - v1.0.1 - 06/09/2024
     Usage examples:
     $ apscale_blast blastn -h
     $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
@@ -655,7 +637,7 @@ def main():
             if len(thresholds) != 5:
                 print('Please provide 5 comma separated values!')
                 print('Using default values...')
-                thresholds = '97,95,90,87,85'.split(',')
+                thresholds = ['97', '95', '90', '87', '85']
             blastn_filter(args.blastn_folder, args.database, thresholds, args.n_cores)
         else:
             print('\nError: Please provide a blast results file folder (.csv)!')
