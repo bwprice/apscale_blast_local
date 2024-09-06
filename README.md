@@ -48,7 +48,7 @@ Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., &
 
 ### Available databases
 
-Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using the <i> database_creator.py </i> script (soon available here).
+Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using [these scripts](https://github.com/TillMacher/apscale_blast/tree/main/db_creator), which are used to create the pre-compiled databases.
 
 The pre-compiled databases are available under the following [server](https://seafile.rlp.net/d/754a25aa76e44b2381b6/) and will be updated regularly.
 
