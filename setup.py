@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="apscale_blast", # Replace with your own username
-    version="1.0.1",
+    version="1.0.2",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
     description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://pypi.org/project/apscale-blast/",
+    url="https://pypi.org/project/apscale_blast/",
     packages=setuptools.find_packages(),
     license='MIT',
     install_requires=[

@@ -556,7 +556,7 @@ def main():
     """ BLASTn suite for apscale """
 
     message = """
-    APSCALE blast command line tool - v1.0.1 - 06/09/2024
+    APSCALE blast command line tool - v1.0.2 - 09/09/2024
     Usage examples:
     $ apscale_blast blastn -h
     $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
