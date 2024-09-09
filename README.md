@@ -1,6 +1,9 @@
 # apscale
 Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data
 
+[![Downloads](https://pepy.tech/badge/apscale_gui)](https://pepy.tech/project/apscale)  - Apscale
+[![Downloads](https://pepy.tech/badge/apscale_gui)](https://pepy.tech/project/apscale_blast)  - Apscale_blast
+
 # apscale-blast
 
 ## Introduction
