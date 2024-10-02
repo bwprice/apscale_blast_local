@@ -231,11 +231,11 @@ options:
   -n_cores N_CORES -> Number of cores to use. [DEFAULT: CPU count - 1]
 
 
+## Benchmark
 
+### v1.0.2 with db release 2024_09
 
-
-
-
+![image](https://github.com/TillMacher/apscale_blast/blob/main/benchmarks/2024_09_benchmark.png?raw=true)
 
 
 
