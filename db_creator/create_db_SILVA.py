@@ -33,37 +33,39 @@ def zip_to_gz(fasta_file):
 
     return gz_path
 
-def silva_taxonomy(fasta_file):
+def silva_taxonomy(fasta_file, taxmap_df):
+
     all_accession_numbers = []
     with gzip.open(fasta_file, 'rt') as myfile:
         data = myfile.read()
         sequences = SeqIO.parse(StringIO(data), 'fasta')
-        for record in sequences:
+        for record in tqdm(sequences):
             accession = record.id
-            taxonomy = record.description.split(' ')[1].split(';')
-            n_taxa = len(taxonomy)
-            if n_taxa == 7:
-                ## correct taxonomy. TAKE IT!
-                all_accession_numbers.append([accession] + taxonomy)
-            elif n_taxa < 7:
-                ## add missing levels
-                missing = 7 - n_taxa
-                taxonomy = taxonomy + [''] * missing
-                all_accession_numbers.append([accession] + taxonomy)
+            query = accession.split('.')[0]
+            res = taxmap_df.loc[taxmap_df['primaryAccession'] == query].values.tolist()[0]
+            species = res[-1]
+            if len(species.split(' ')) > 1:
+                genus = species.split(' ')[0]
             else:
-                taxonomy = taxonomy[:7]
-                all_accession_numbers.append([accession] + taxonomy)
+                genus = species
+            parents = [i for i in res[-2].split(';') if i != '' and i != species][2:]
+            taxonomy = parents[:5]+[genus]+[species]
+
+
+            all_accession_numbers.append([accession] + taxonomy)
 
     accession_df = pd.DataFrame(all_accession_numbers, columns=['Accession', 'superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'])
 
     return accession_df
 
-def run_silva(output_path, fasta_file):
+def run_silva(output_path, fasta_file, taxmap_file):
 
     print('{} : Starting to collect taxonomy from fasta files.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
     ## collect accession numbers
-    accession_df = silva_taxonomy(fasta_file)
+    with gzip.open(taxmap_file, 'rt') as f:
+        taxmap_df = pd.read_csv(f, delimiter='\t')  # Adjust the delimiter as needed
+    accession_df = silva_taxonomy(fasta_file, taxmap_df)
 
     print('{} : Starting to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
@@ -90,18 +92,14 @@ def run_silva(output_path, fasta_file):
 
 ## Variables
 output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09'
-files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/SILVA/*.fasta*')
+fasta_files = sorted(glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/SILVA/*.fasta*'))
+taxmap_files = sorted(glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/SILVA/*.txt.gz'))
 
-for fasta_file in files:
+for fasta_file, taxmap_file in zip(fasta_files, taxmap_files):
     ## Run
     if Path(fasta_file).suffix == '.zip':
         fasta_file = zip_to_gz(fasta_file)
-    run_silva(output_path, fasta_file)
-
-
-
-
-
+    run_silva(output_path, fasta_file, taxmap_file)
 
 
 
