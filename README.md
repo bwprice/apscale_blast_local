@@ -31,13 +31,7 @@ To update apscale-blast run:
 
 `pip install --upgrade apscale_blast`
 
-## Distributables
-
-Apscale-blast is also available as executable file that does not require the installation of python.
-Please make sure to add the executable to the whitelist of your anti-virus software, otherwise the apscale-blast
-will be blocked or deleted.
-
-Distributables will soon be available [here](https://seafile.rlp.net/d/754a25aa76e44b2381b6/).
+The easiest installation option is the [Conda apscale environment](https://github.com/TillMacher/apscale_installer). This way, all dependencies will automatically be installed.
 
 ### Further dependencies - blast+
 
@@ -54,7 +48,7 @@ Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., &
 
 Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using [these scripts](https://github.com/TillMacher/apscale_blast/tree/main/db_creator), which are used to create the pre-compiled databases.
 
-The pre-compiled databases are available under the following [server](https://seafile.rlp.net/d/754a25aa76e44b2381b6/) and will be updated regularly.
+The [pre-compiled databases are available under the following server](https://seafile.rlp.net/d/474b9682a5cb4193a6ad/) and will be updated regularly.
 
 IMPORTANT: Please cite the used database accordingly!
 
