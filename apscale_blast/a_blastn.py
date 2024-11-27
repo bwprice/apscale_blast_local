@@ -95,8 +95,7 @@ def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
     return df_2
 
 
-def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task,
-                    max_target_seqs):
+def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs, masking):
     """
     Runs a single BLASTN job on a subset of the fasta file.
 
@@ -119,6 +118,15 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
             print('{}: Skipping {} (already exists).'.format(datetime.datetime.now().strftime('%H:%M:%S'),
                                                              blastn_csv.stem))
         time.sleep(1)
+    elif masking == "No":
+        # Run the BLASTN command
+        subprocess.call([blastn_exe, '-task', task, '-db', str(db_folder), '-query', str(fasta_file),
+                         '-num_threads', str(1), '-max_target_seqs', str(max_target_seqs),
+                         '-dust', 'no', '-soft_masking', 'false',
+                         '-outfmt', '6 delim=;; qseqid sseqid pident evalue', '-out', str(blastn_csv)])
+        with print_lock:
+            print('{}: Finished blastn for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1,
+                                                                 n_subsets))
     else:
         # Run the BLASTN command
         subprocess.call([blastn_exe, '-task', task, '-db', str(db_folder), '-query', str(fasta_file),
@@ -129,7 +137,8 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
                                                                  n_subsets))
 
 
-def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, apscale_gui):
+
+def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui):
     """
     Improved BLASTN function that utilizes multithreading for faster performance.
 
@@ -172,7 +181,7 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
 
     # Run BLASTN in parallel across all subsets
     Parallel(n_jobs=n_cores, backend='threading')(delayed(blastn_parallel)(
-        fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs
+        fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs, masking
     ) for i, fasta_file in enumerate(fasta_files))
 
     # Write log file with database and task information
@@ -200,13 +209,13 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     shutil.rmtree(subset_folder)
 
 
-def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, apscale_gui):
+def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui):
     """
     Main entry point for the script.
     """
 
     # Run the BLASTn filter
-    blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, apscale_gui)
+    blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui)
 
 if __name__ == '__main__':
     main()

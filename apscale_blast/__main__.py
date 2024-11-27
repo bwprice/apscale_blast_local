@@ -53,6 +53,8 @@ def main():
                                help='Number of sequences per query fasta subset. [DEFAULT: 100]')
     blastn_parser.add_argument('-max_target_seqs', type=int, default=20,
                                help='Number of hits retained from the blast search. Larger values increase runtimes and storage needs. [DEFAULT: 20]')
+    blastn_parser.add_argument('-masking', type=str, default='Yes',
+                               help='Activate masking [DEFAULT="Yes"]')
 
     # Arguments specific to filter
     filter_parser.add_argument('-blastn_folder', type=str, help='PATH to blastn results folder for filtering.')
@@ -84,8 +86,16 @@ def main():
         if args.query_fasta:
             project_folder = args.out  # Use the output directory specified by the user
             # Run the BLASTn function
-            a_blastn(args.blastn_exe, args.query_fasta.strip('"'), args.database.strip('"'),
-                     project_folder, args.n_cores, args.task, args.subset_size, args.max_target_seqs, args.apscale_gui)
+            a_blastn(args.blastn_exe,
+                     args.query_fasta.strip('"'),
+                     args.database.strip('"'),
+                     project_folder,
+                     args.n_cores,
+                     args.task,
+                     args.subset_size,
+                     args.max_target_seqs,
+                     args.masking,
+                     args.apscale_gui)
         else:
             print('\nError: Please provide a fasta file!')
 
