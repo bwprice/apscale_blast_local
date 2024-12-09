@@ -138,7 +138,7 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
 
 
 
-def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui):
+def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking):
     """
     Improved BLASTN function that utilizes multithreading for faster performance.
 
@@ -151,7 +151,6 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
         task (str): BLAST task (e.g., 'megablast', 'blastn').
         subset_size (int): Size of fasta file subsets.
         max_target_seqs (int): Maximum target sequences to report.
-        apscale_gui (bool): GUI flag (not used).
     """
     # Split fasta file into subsets
     subset_folder = fasta_subset(query_fasta, subset_size)
@@ -209,13 +208,13 @@ def blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores,
     shutil.rmtree(subset_folder)
 
 
-def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui):
+def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking):
     """
     Main entry point for the script.
     """
 
     # Run the BLASTn filter
-    blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, apscale_gui)
+    blastn_v2(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking)
 
 if __name__ == '__main__':
     main()
