@@ -11,7 +11,6 @@ import gzip
 import shutil
 import os
 
-
 def zip_to_gz(fasta_file):
     # Determine the output .gz file path
     gz_path = os.path.splitext(fasta_file)[0] + '.gz'
@@ -86,8 +85,8 @@ def run_midori2(output_path, fasta_file):
     print('{} : Finished to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
 ## Variables
-output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09'
-files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/MIDORI2/*.fasta*')
+output_path = '/Volumes/Coruscant/dbDNA_amphibians/genbank'
+files = glob.glob('/Volumes/Coruscant/dbDNA_amphibians/genbank/main.fasta.gz')
 
 for fasta_file in files:
     ## Run
