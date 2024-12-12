@@ -13,7 +13,7 @@ def main():
 
     # Introductory message with usage examples
     message = """
-    APSCALE blast command line tool - v1.0.2 - 09/09/2024
+    APSCALE blast command line tool - v1.0.6
     Usage examples:
     $ apscale_blast blastn -h
     $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
@@ -94,8 +94,7 @@ def main():
                      args.task,
                      args.subset_size,
                      args.max_target_seqs,
-                     args.masking,
-                     args.apscale_gui)
+                     args.masking)
         else:
             print('\nError: Please provide a fasta file!')
 
