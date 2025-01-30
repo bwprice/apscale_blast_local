@@ -158,13 +158,13 @@ options:
 
 ## Remote blast
 
-Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table.
+_Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table._
 
-NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the provided local databases.
+_NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the provided local databases._
 
-Requests will be rate-limited to 10 requests per day (1000 sequences) to avoid overloading the server.
+_Requests will be rate-limited to 10 requests per day (1000 sequences) to avoid overloading the server._
 
-Run the remote blast on weekends or between 9 pm and 5 am Eastern time on weekdays.
+_Run the remote blast on weekends or between 9 pm and 5 am Eastern time on weekdays._
 
 
 ## Benchmark
