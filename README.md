@@ -155,6 +155,7 @@ options:
 
 -update_taxids, -u    Update NCBI taxid backbone
 
+
 ## Remote blast
 
 Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table.
