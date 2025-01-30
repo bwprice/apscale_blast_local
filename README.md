@@ -151,8 +151,6 @@ options:
 
 -thresholds THRESHOLDS: Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
 
--headless HEADLESS    Hide the Chromium browser during the remote blast [DEFAULT: True]
-
 -update_taxids, -u    Update NCBI taxid backbone
 
 
