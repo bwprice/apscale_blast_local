@@ -158,7 +158,7 @@ options:
 
 _Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table._
 
-_NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the provided local databases._
+_NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the [provided local databases](https://github.com/TillMacher/apscale_blast/tree/main?tab=readme-ov-file#available-databases)._
 
 _Requests will be rate-limited to 10 requests per day (1000 sequences) to avoid overloading the server._
 
