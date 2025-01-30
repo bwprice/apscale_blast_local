@@ -1,9 +1,11 @@
 import argparse
 import multiprocessing
 import os
+import sys
 from pathlib import Path
 from apscale_blast.a_blastn import main as a_blastn
 from apscale_blast.b_filter import main as b_filter
+from ete3 import NCBITaxa, Tree
 
 def main():
     """
@@ -13,61 +15,51 @@ def main():
 
     # Introductory message with usage examples
     message = """
-    APSCALE blast command line tool - v1.0.6
-    Usage examples:
-    $ apscale_blast blastn -h
-    $ apscale_blast blastn -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -query_fasta ./12S_apscale_ESVs.fasta
-    $ apscale_blast filter -h
-    $ apscale_blast filter -database ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -blastn_folder ./12S_apscale_ESVs_blastn
+    APSCALE blast command line tool - v1.2.0
+    Example commands:
+    $ apscale_blast -h
+    $ apscale_blast -db ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -q ./12S_apscale_ESVs.fasta
+    
+    Remember to update your local ete3 NCBI taxonomy regularly, if using the "remote" blastn!
+    This can be performed by running:
+    $ apscale_blast -u
     """
     print(message)
 
     # Initialize the argument parser
-    parser = argparse.ArgumentParser(description='APSCALE blast v1.0.2')
-
-    # Creating subcommands (blastn and filter)
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-
-    # BLASTn subcommand parser
-    blastn_parser = subparsers.add_parser('blastn', help='Perform blastn search on a selected fasta file.')
-    # Filter subcommand parser
-    filter_parser = subparsers.add_parser('filter', help='Filter blastn results based on thresholds.')
+    parser = argparse.ArgumentParser(description='APSCALE blast v1.1.0')
 
     # Arguments for both blastn and filter
-    common_args = ['-database', '-apscale_gui']
-    for arg in common_args:
-        blastn_parser.add_argument(arg, type=str, required=False, help=f'PATH to {arg.lstrip("-")}.')
-        filter_parser.add_argument(arg, type=str, required=False, help=f'PATH to {arg.lstrip("-")}.')
-
-    # Arguments specific to BLASTn
-    blastn_parser.add_argument('-blastn_exe', type=str, default='blastn',
-                               help='PATH to blast executable. [DEFAULT: blastn]')
-    blastn_parser.add_argument('-query_fasta', type=str, help='PATH to fasta file.')
-    blastn_parser.add_argument('-n_cores', type=int, default=multiprocessing.cpu_count() - 1,
-                               help='Number of CPU cores to use. [DEFAULT: CPU count - 1]')
-    blastn_parser.add_argument('-task', type=str, default='blastn',
-                               help='Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]')
-    blastn_parser.add_argument('-out', type=str, default='./',
-                               help='PATH to output directory. A new folder will be created here. [DEFAULT: ./]')
-    blastn_parser.add_argument('-subset_size', type=int, default=100,
-                               help='Number of sequences per query fasta subset. [DEFAULT: 100]')
-    blastn_parser.add_argument('-max_target_seqs', type=int, default=20,
-                               help='Number of hits retained from the blast search. Larger values increase runtimes and storage needs. [DEFAULT: 20]')
-    blastn_parser.add_argument('-masking', type=str, default='Yes',
-                               help='Activate masking [DEFAULT="Yes"]')
-
-    # Arguments specific to filter
-    filter_parser.add_argument('-blastn_folder', type=str, help='PATH to blastn results folder for filtering.')
-    filter_parser.add_argument('-thresholds', type=str, default='97,95,90,87,85',
-                               help='Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]')
-    filter_parser.add_argument('-n_cores', type=int, default=multiprocessing.cpu_count() - 1,
-                               help='Number of CPU cores to use. [DEFAULT: CPU count - 1]')
+    parser.add_argument('-database', '-db', type=str, required=False, help=f'PATH to local database. Use "remote" to blast against the complete GenBank database (might be slow)')
+    parser.add_argument('-blastn_exe', type=str, default='blastn', help='PATH to blast executable. [DEFAULT: blastn]')
+    parser.add_argument('-query_fasta', '-q', type=str, help='PATH to fasta file.')
+    parser.add_argument('-n_cores', type=int, default=multiprocessing.cpu_count() - 1, help='Number of CPU cores to use. [DEFAULT: CPU count - 1]')
+    parser.add_argument('-task', type=str, default='blastn', help='Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]')
+    parser.add_argument('-out', '-o', type=str, default='./', help='PATH to output directory. A new folder will be created here. [DEFAULT: ./]')
+    parser.add_argument('-subset_size', type=int, default=100, help='Number of sequences per query fasta subset. [DEFAULT: 100]')
+    parser.add_argument('-max_target_seqs', type=int, default=20, help='Number of hits retained from the blast search. Larger values increase runtimes and storage needs. [DEFAULT: 20]')
+    parser.add_argument('-masking', type=str, default='Yes', help='Activate masking [DEFAULT="Yes"]')
+    parser.add_argument('-thresholds', type=str, default='97,95,90,87,85', help='Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]')
+    # parser.add_argument('-headless', type=str, default="True", help='Display the Chromium browser during the remote blast [DEFAULT: True')
+    parser.add_argument('-update_taxids', '-u', action='store_true', help='Update NCBI taxid backbone')
+    parser.add_argument('-gui', action='store_true', help='Only required for Apscale-GUI')
 
     # Parse the arguments
     args = parser.parse_args()
 
+    # Handle taxonomy update
+    if args.update_taxids:
+        print("Updating NCBI taxonomy database...")
+        ncbi = NCBITaxa()
+        ncbi.update_taxonomy_database()
+        print("Taxonomy database updated successfully.")
+        if Path('./taxdump.tar.gz').exists():
+            os.remove('./taxdump.tar.gz')
+            print('Removed taxdmup.tar.gz')
+        return  # Exit after updating taxonomy
+
     # Handle missing arguments interactively for both commands
-    if args.command == 'blastn' and not args.database and not args.query_fasta:
+    if not args.database and not args.query_fasta:
         args.database = input("Please enter PATH to database: ").strip('"')
         args.query_fasta = input("Please enter PATH to query fasta: ").strip('"')
 
@@ -77,35 +69,36 @@ def main():
             if not os.path.isdir(args.out):
                 os.mkdir(Path(args.out))  # Create the output directory
 
-    elif args.command == 'filter' and not args.database and not args.blastn_folder:
-        args.database = input("Please enter PATH to database: ").strip('"')
-        args.blastn_folder = input("Please enter PATH to blastn folder: ").strip('"')
+    ## CHECK IF FILES ALREADY EXIST
+    project_folder = args.out  # Use the output directory specified by the user
 
     # Handle the 'blastn' command
-    if args.command == 'blastn':
-        if args.query_fasta:
-            project_folder = args.out  # Use the output directory specified by the user
-            # Run the BLASTn function
-            a_blastn(args.blastn_exe,
-                     args.query_fasta.strip('"'),
-                     args.database.strip('"'),
-                     project_folder,
-                     args.n_cores,
-                     args.task,
-                     args.subset_size,
-                     args.max_target_seqs,
-                     args.masking)
-        else:
-            print('\nError: Please provide a fasta file!')
+    headless = "True"
+    continue_blast = False
+    if args.query_fasta:
+        # Run the BLASTn function
+        continue_blast = a_blastn(args.blastn_exe,
+                 args.query_fasta.strip('"'),
+                 args.database.strip('"'),
+                 project_folder,
+                 args.n_cores,
+                 args.task,
+                 args.subset_size,
+                 args.max_target_seqs,
+                 args.masking,
+                 headless,
+                 args.gui)
+    else:
+        print('\nError: Please provide a fasta file!')
 
     # Handle the 'filter' command
-    elif args.command == 'filter':
-        if args.blastn_folder:
-            # Run the filter function
-            b_filter(args.blastn_folder.strip('"'), args.database.strip('"'), args.thresholds, args.n_cores)
-        else:
-            print('\nError: Please provide a blastn results file folder (.csv)!')
-
+    if continue_blast == False:
+        print('\nNot all fasta subsets have been processed yet!')
+    elif not os.path.isfile(Path(project_folder).joinpath('log.txt')):
+        print('\nError: Could not find the BLAST results folder!')
+    else:
+        # Run the filter function
+        b_filter(project_folder, args.database.strip('"'), args.thresholds, args.n_cores)
 
 # Run the main function if script is called directly
 if __name__ == "__main__":

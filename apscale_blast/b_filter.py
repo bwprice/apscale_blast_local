@@ -13,6 +13,9 @@ from joblib import Parallel, delayed
 import threading
 import pyarrow as pa
 import pyarrow.parquet as pq
+from ete3 import NCBITaxa, Tree
+import requests
+import xmltodict
 
 # Lock for thread-safe print statements
 print_lock = threading.Lock()
@@ -39,6 +42,21 @@ def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
     df_2 = pd.DataFrame(df_2_list, columns=col_names_2)
     return df_2
 
+def ncbi_taxid_request(taxid):
+    desired_ranks = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+    try:
+        ncbi = NCBITaxa()
+        lineage = ncbi.get_lineage(taxid)
+        lineage2ranks = ncbi.get_rank(lineage)
+        ranks2lineage = dict((rank, taxid) for (taxid, rank) in lineage2ranks.items())
+        results = {'{}_id'.format(rank): ranks2lineage.get(rank, '<not present>') for rank in desired_ranks}
+        taxids = [str(taxid) for taxid in list(results.values())]
+        taxonomy = [list(ncbi.get_taxid_translator([taxid]).values())[0] for taxid in taxids]
+        return taxonomy
+    except ValueError:
+        taxonomy_placeholder = f'Unknown taxid {str(taxid)}'
+        return [taxonomy_placeholder] * 7
+
 def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
     """
     Filter BLASTn results from CSV files.
@@ -46,8 +64,20 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
 
     ## load blast results
     col_names = ['unique ID', 'Sequence ID', 'Similarity', 'evalue']
+
+    if not os.path.isfile(file):
+        print('{}: Skipping missing subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
+        return
+    if os.path.getsize(file) == 0:
+        print('{}: Skipping empty subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
+        return
+
     csv_df = pd.read_csv(file, header=None, sep=';;', names=col_names, engine='python').fillna('NAN')
     csv_df['Similarity'] = [float(i) for i in csv_df['Similarity'].values.tolist()]
+
+    if len(csv_df) == 0:
+        print('{}: Error during filtering for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
+        return
 
     thresholds = thresholds.split(',')
     # Ensure correct number of thresholds
@@ -68,7 +98,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
     taxonomy_df = pd.DataFrame()
 
     # loop through IDs
-    # ID ='OTU_99'
+    # ID = ID_set[0]
     for ID in ID_set:
         ## filter by evalue
         df_0 = csv_df.loc[csv_df['unique ID'] == ID]
@@ -81,12 +111,27 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
 
         ############################################################################################################
         ## convert fasta headers to taxonomy
-        df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2, db_name)
+        if db_name != 'remote':
+            df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2, db_name)
+        else:
+            df_2_values = []
+            for row in df_1.values.tolist():
+                taxid = row[1]
+                taxonomy = ncbi_taxid_request(taxid)
+                df_2_values.append([row[0]] + taxonomy + row[2:])
+            df_2 = pd.DataFrame(df_2_values, columns=col_names_2)
+
+        ## Filter out missing taxids
+        if df_2['Species'].str.contains(r'\bUnknown taxid\b', na=False).any():
+            df_2_reduced = df_2.loc[~df_2['Species'].str.contains(r'\bUnknown taxid\b', na=False)]
+            if len(df_2_reduced) != 0:
+                df_2 = df_2_reduced.copy()
 
         ############################################################################################################
 
         ##### 2) ROBUSTNESS TRIMMING BY SIMILARITY
         n_hits = len(df_2)
+
         if max_sim >= species_threshold:
             pass
         elif max_sim < species_threshold and max_sim >= genus_threshold:
@@ -148,7 +193,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
                 ##### 8) TWO SPECIES OF ONE GENUS? (F2)
                 n_genera = len(set(df_3['Genus']))
                 if n_genera == 1 and len(df_3) == 2:
-                    genus = df_3['Genus'][0]
+                    genus = df_3['Genus'].values.tolist()[0]
                     species = '/'.join([i.replace(genus + ' ', '') for i in df_3['Species'].values.tolist()])
                     df_3['Species'] = ['{} {}'.format(genus, species)]*len(df_3)
                     df_3['Flag'] = ['F2'] * len(df_3)
@@ -157,7 +202,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
 
                 ##### 9) MULTIPLE SPECIES OF ONE GENUS? (F3)
                 elif n_genera == 1 and len(df_3) != 2:
-                    genus = df_3['Genus'][0]
+                    genus = df_3['Genus'].values.tolist()[0]
                     df_3['Species'] = [genus + ' sp.']*len(df_3)
                     df_3['Flag'] = ['F3'] * len(df_3)
                     df_3['Ambigous taxa'] = [', '.join(df_2['Species'].drop_duplicates().values.tolist())] * len(df_3)
@@ -356,7 +401,7 @@ def filter_blast_csvs_dbDNA(file, i, n_subsets, thresholds):
     ## finish command
     print('{}: Finished filtering for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
 
-def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
+def main(blastn_folder, blastn_database, thresholds, n_cores):
     """ Filter results according to Macher et al., 2023 (Fish Mock Community paper) """
 
     print('{}: Starting to filter blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
@@ -365,9 +410,6 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
     ## load blast results
     csv_files = glob.glob('{}/subsets/*.csv'.format(blastn_folder))
 
-    ## collect name of database
-    db_name = Path(blastn_database).stem
-
     ## check if a dbDNA database was used
     if "_dbDNA" in blastn_database:
         # PARALLEL FILTER COMMAND
@@ -375,18 +417,30 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
         Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blast_csvs_dbDNA)(file, i, n_subsets, thresholds) for i, file in enumerate(csv_files))
 
         ## also already define the no match row
-        NoMatch = ["NoMatch"] * 6 + [0] * 2 + ['']*17
+        NoMatch = ["No Match"] * 6 + [0] * 2 + ['']*17
     else:
-        ## load taxid table
-        taxid_table = Path(blastn_database).joinpath('db_taxonomy.parquet.snappy')
-        taxid_df = pd.read_parquet(taxid_table).fillna('')
-        taxid_dict = {i[0]:i[1::] for i in taxid_df.values.tolist()}
+
+        if blastn_database != 'remote':
+            ## load taxid table
+            taxid_table = Path(blastn_database).joinpath('db_taxonomy.parquet.snappy')
+            taxid_df = pd.read_parquet(taxid_table).fillna('')
+            taxid_dict = {i[0]:i[1::] for i in taxid_df.values.tolist()}
+            ## collect name of database
+            db_name = Path(blastn_database).stem
+        else:
+            ## remote blast does not require the taxid_dict, but it must be defined anyways
+            taxid_dict = {}
+            ## collect name of databaseU
+            db_name = "remote"
 
         # PARALLEL FILTER COMMAND
         n_subsets = len(csv_files)
-        # file = csv_files[0]
-        # i = 1
-        Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files))
+        # file = csv_files[2]
+        # i = 0
+        if blastn_database != 'remote':
+            Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files))
+        else:
+            [filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files)]
 
         ## also already define the no match row
         NoMatch = ['NoMatch'] * 7 + [0, 1, '', '']
@@ -394,56 +448,56 @@ def blastn_filter(blastn_folder, blastn_database, thresholds, n_cores):
     # Get a list of all the xlsx files
     xlsx_files = glob.glob('{}/subsets/*.xlsx'.format(blastn_folder))
 
-    # Create a list to hold all the individual DataFrames
-    df_list = []
+    if len(xlsx_files) == 0:
+        print('## Warning ##')
+        print('{}: Error during filtering of the blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
+        print('{}: Please check your database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
+        print('{}: Errors usually occur during unzipping of the database file.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
+        print('## Warning ##')
+    else:
 
-    # Loop through the list of xlsx files
-    for file in xlsx_files:
-        # Read each xlsx file into a DataFrame
-        df = pd.read_excel(file).fillna('')
-        # Append the DataFrame to the list
-        df_list.append(df)
+        # Create a list to hold all the individual DataFrames
+        df_list = []
 
-    # Concatenate all the DataFrames in the list into one DataFrame
-    merged_df = pd.concat(df_list, ignore_index=True)
-    name = Path(blastn_folder).name
-    blastn_filtered_xlsx = Path('{}/{}_taxonomy.xlsx'.format(blastn_folder, name))
+        # Loop through the list of xlsx files
+        for file in xlsx_files:
+            # Read each xlsx file into a DataFrame
+            df = pd.read_excel(file).fillna('')
+            # Append the DataFrame to the list
+            df_list.append(df)
 
-    ## add OTUs without hit
-    # Drop duplicates in the DataFrame
-    merged_df = merged_df.drop_duplicates()
-    output_df_list = []
+        # Concatenate all the DataFrames in the list into one DataFrame
+        merged_df = pd.concat(df_list, ignore_index=True)
+        name = Path(blastn_folder).name
+        blastn_filtered_xlsx = Path('{}/{}_taxonomy.xlsx'.format(blastn_folder, name))
 
-    # Read the IDs from the file
-    ID_list = Path(blastn_folder).joinpath('IDs.txt')
-    IDs = [i.rstrip() for i in ID_list.open()]
+        ## add OTUs without hit
+        # Drop duplicates in the DataFrame
+        merged_df = merged_df.drop_duplicates()
+        output_df_list = []
 
-    # Check if each ID is already in the DataFrame
-    for ID in IDs:
-        if ID not in merged_df['unique ID'].values.tolist():
-            # Create a new row with the ID and other relevant information
-            row = [ID] + NoMatch
-            output_df_list.append(row)
-        else:
-            row = merged_df.loc[merged_df['unique ID'] == ID].values.tolist()[0]
-            output_df_list.append(row)
+        # Read the IDs from the file
+        ID_list = Path(blastn_folder).joinpath('IDs.txt')
+        IDs = [i.rstrip() for i in ID_list.open()]
 
-    ## sort table
-    merged_df.columns.tolist()
+        # Check if each ID is already in the DataFrame
+        for ID in IDs:
+            if ID not in merged_df['unique ID'].values.tolist():
+                # Create a new row with the ID and other relevant information
+                row = [ID] + NoMatch
+                output_df_list.append(row)
+            else:
+                row = merged_df.loc[merged_df['unique ID'] == ID].values.tolist()[0]
+                output_df_list.append(row)
 
-    output_df = pd.DataFrame(output_df_list, columns=merged_df.columns.tolist())
-    output_df['Status'] = 'apscale blast'
-    output_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
+        ## sort table
+        merged_df.columns.tolist()
 
-    print('{}: Finished to filter blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
+        output_df = pd.DataFrame(output_df_list, columns=merged_df.columns.tolist())
+        output_df['Status'] = 'apscale blast'
+        output_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)
 
-def main(blastn_folder, blastn_database, thresholds, n_cores):
-    """
-    Main entry point for the script.
-    """
-
-    # Run the BLASTn filter
-    blastn_filter(blastn_folder, blastn_database, thresholds, n_cores)
+        print('{}: Finished to filter blast results for \'{}\''.format(datetime.datetime.now().strftime('%H:%M:%S'), blastn_folder))
 
 if __name__ == '__main__':
     main()

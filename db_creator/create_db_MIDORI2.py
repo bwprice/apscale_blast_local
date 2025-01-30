@@ -10,6 +10,21 @@ import zipfile
 import gzip
 import shutil
 import os
+import zipfile
+import os
+from pathlib import Path
+
+def zip_folder(source_folder, output_zip):
+    """Safely zip a folder with UTF-8 encoding (Windows, Mac, Linux compatible)."""
+    source_folder = Path(source_folder).resolve()
+    output_zip = Path(output_zip).with_suffix(".zip")
+
+    with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as zipf:
+        for foldername, subfolders, filenames in os.walk(source_folder):
+            for filename in filenames:
+                file_path = Path(foldername) / filename
+                archive_name = file_path.relative_to(source_folder)  # Preserve folder structure
+                zipf.write(file_path, archive_name)
 
 def zip_to_gz(fasta_file):
     # Determine the output .gz file path
@@ -80,15 +95,16 @@ def run_midori2(output_path, fasta_file):
 
     ## zip the folder
     output = Path(output_path).joinpath(f'db_{db_name}')
-    shutil.make_archive(output, 'zip', output)
+    output_zip = Path(output_path).joinpath(f'db_{db_name}.zip')
+    zip_folder(output, output_zip)
 
     print('{} : Finished to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
 ## Variables
-output_path = '/Volumes/Coruscant/dbDNA_amphibians/genbank'
-files = glob.glob('/Volumes/Coruscant/dbDNA_amphibians/genbank/main.fasta.gz')
+output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2025_01'
+files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2025_01_fasta/*MIDORI*')
 
-for fasta_file in files:
+for fasta_file in tqdm(files):
     ## Run
     if Path(fasta_file).suffix == '.zip':
         fasta_file = zip_to_gz(fasta_file)

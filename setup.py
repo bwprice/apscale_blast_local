@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="apscale_blast", # Replace with your own username
-    version="1.0.6",
+    version="1.2.0",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
     description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application",
@@ -18,6 +18,7 @@ setuptools.setup(
                     'Bio >= 1.7.1',
                     'biopython >= 1.84',
                     'joblib >= 1.4.2',
+                    'ete3 >= 3.1.3',
                     'numpy',
                     'pandas >= 2.2.2',
                     'pyarrow >= 16.1.0',
