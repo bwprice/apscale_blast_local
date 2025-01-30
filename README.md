@@ -44,13 +44,134 @@ IMPORTANT: Please cite the blast+ software.
 
 Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., & Madden, T. L. (2009). BLAST+: Architecture and applications. BMC Bioinformatics, 10, 421. https://doi.org/10.1186/1471-2105-10-421
 
-### Available databases
+## Available databases
 
 Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using [these scripts](https://github.com/TillMacher/apscale_blast/tree/main/db_creator), which are used to create the pre-compiled databases.
 
 The [pre-compiled databases are available under the following server](https://seafile.rlp.net/d/474b9682a5cb4193a6ad/) and will be updated regularly.
 
 IMPORTANT: Please cite the used database accordingly!
+
+## How to use
+
+#### Start
+
+* Open a terminal, powershell, or command line window. To view the help page type:
+
+`apscale_blast -h`
+
+#### Blastn search & filtering
+
+* Apscale blast can be initialized by calling:
+
+`apscale_blast`
+
+* You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
+
+`/Users/tillmacher/Downloads/MIDORI2_UNIQ_NUC_GB260_srRNA_BLAST`
+
+* Next, you will be asked to provide the FULL PATH to your query fasta file that contains the OTU/ESV sequences. Enter the PATH in the command line. For example:
+
+`/Users/tillmacher/Downloads/test_data_OTUs.fasta`
+
+* Apscale-blast will split your fasta into smaller subsets [DEFAULT: 100].
+  
+* Each subset fasta file will be seperately blasted in parallel [DEFAULT: CPU count - 1].
+  
+* A new folder is created containing the unfiltered blastn results:
+
+<pre>
+├───test_data_OTUs.fasta
+└───test_data_OTUs
+    ├───IDs.txt
+    ├───log.txt
+    ├───test_data_OTUs.parquet.snappy
+    └───subsets
+        ├───subset_1_blastn.csv
+        ├───subset_2_blastn.csv
+        ├───subset_3_blastn.csv
+        └───subset_4_blastn.csv
+</pre>
+
+* Apscale-blast will automatically filter the blastn results according to the following criteria:
+  
+- By e-value (the e-value is the number of expected hits of similar quality which could be found just by chance):
+- The hit(s) with the lowest e-value are kept (the lower the e-value the better).
+- By taxonomy:
+- Hits with the same taxonomy are dereplicated.
+- Hits are adjusted according to thresholds (default: species >=98%, genus >=95%, family >=90%, order >=85%) and dereplicated.
+- Hits with still conflicting taxonomy are set back to the most recent common taxonomy
+- OTU without matches in the blastn search are re-added as 'No Match'
+
+* The results are collected and written to an new Excel file.
+
+<pre>
+├───test_data_OTUs.fasta
+└───test_data_OTUs
+    ├───IDs.txt
+    ├───log.txt
+    ├───test_data_OTUs_taxonomy.xlsx  <-- Filtered taxonomic identification results!
+    ├───test_data_OTUs.parquet.snappy
+    └───subsets
+        ├───subset_1_blastn_filtered.xlsx
+        ├───subset_1_blastn.csv
+        ├───subset_2_blastn_filtered.xlsx
+        ├───subset_2_blastn.csv
+        ├───subset_3_blastn_filtered.xlsx
+        ├───subset_3_blastn.csv
+        ├───subset_4_blastn_filtered.xlsx
+        └───subset_4_blastn.csv
+</pre>
+
+## Options
+
+### BLASTn & Filtering
+
+options:
+
+-h, --help: show this help message and exit
+
+-database DATABASE, -db DATABASE: PATH to local database. Use "remote" to blast against the complete GenBank database (might be slow)
+
+-blastn_exe BLASTN_EXE: PATH to blast executable. [DEFAULT: blastn]
+
+-query_fasta QUERY_FASTA, -q QUERY_FASTA: PATH to fasta file.
+
+-n_cores N_CORES: Number of CPU cores to use. [DEFAULT: CPU count - 1]
+
+-task TASK: Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]
+
+-out OUT, -o OUT: PATH to output directory. A new folder will be created here. [DEFAULT: ./]
+
+-subset_size SUBSET_SIZE: Number of sequences per query fasta subset. [DEFAULT: 100]
+
+-max_target_seqs MAX_TARGET_SEQS: Number of hits retained from the blast search. Larger values increase runtimes and storage needs. [DEFAULT: 20]
+
+-masking MASKING: Activate masking [DEFAULT="Yes"]
+
+-thresholds THRESHOLDS: Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
+
+-update_taxids, -u    Update NCBI taxid backbone
+
+
+## Remote blast
+
+_Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table._
+
+_NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the [provided local databases](https://github.com/TillMacher/apscale_blast?tab=readme-ov-file#available-databases)._
+
+_Requests will be rate-limited to 10 requests per day (1000 sequences) to avoid overloading the server._
+
+_Run the remote blast on weekends or between 9 pm and 5 am Eastern time on weekdays._
+
+
+## Benchmark
+
+### v1.0.2 with db release 2024_09
+
+![image](https://github.com/TillMacher/apscale_blast/blob/main/benchmarks/2024_09_benchmark.png?raw=true)
+
+## Databases
 
 #### Midori2
 
@@ -83,153 +204,5 @@ Guillou, L., Bachar, D., Audic, S., Bass, D., Berney, C., Bittner, L., Boutte, C
 #### diat.barcode
 
 Rimet, F., Gusev, E., Kahlert, M., Kelly, M. G., Kulikovskiy, M., Maltsev, Y., Mann, D. G., Pfannkuchen, M., Trobajo, R., Vasselon, V., Zimmermann, J., & Bouchez, A. (2019). Diat.barcode, an open-access curated barcode library for diatoms. Scientific Reports, 9(1), Article 1. https://doi.org/10.1038/s41598-019-51500-6
-
-
-
-## How to use
-
-#### Pip installation
-
-* Open a terminal, powershell, or command line window. Then, execute the following command:
-
-`apscale_blast blastn`
-
-#### Executable
-
-* Open a terminal, powershell, or command line window. Navigate to the folder where the executable is located. Then, execute the following command:
-
-Windows: `./apscale_blast.exe blastn`
-
-MacOS: `./apscale_blast blastn`
-
-#### Blastn search
-
-* You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/MIDORI2_UNIQ_NUC_GB260_srRNA_BLAST`
-
-* Next, you will be asked to provide the FULL PATH to your query fasta file that contains the OTU/ESV sequences. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/test_data_OTUs.fasta`
-
-* Apscale-blast will split your fasta into smaller subsets [DEFAULT: 100].
-  
-* Each subset fasta file will be seperately blasted in parallel [DEFAULT: CPU count - 1].
-  
-* A new folder is created containing the unfiltered blastn results:
-
-<pre>
-├───test_data_OTUs.fasta
-└───test_data_OTUs
-    ├───IDs.txt
-    ├───log.txt
-    ├───test_data_OTUs.parquet.snappy
-    └───subsets
-        ├───subset_1_blastn.csv
-        ├───subset_2_blastn.csv
-        ├───subset_3_blastn.csv
-        └───subset_4_blastn.csv
-</pre>
-
-#### Blastn results filtering
-
-* Execute apscale-blast again and call the filter module:
-
-`apscale_blast filter`
-
-or 
-
-Windows: `./apscale_blast.exe filter`
-
-MacOS: `./apscale_blast filter`
-
-* You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/MIDORI2_UNIQ_NUC_GB260_srRNA_BLAST`
-
-* Next, you will be asked to provide the FULL PATH to the output folder that contains the unfiltered blastn results. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/test_data_OTUs`
-
-* Apscale-blast will now filter the blastn results according to the following criteria:
-  
-- By e-value (the e-value is the number of expected hits of similar quality which could be found just by chance):
-- The hit(s) with the lowest e-value are kept (the lower the e-value the better).
-- By taxonomy:
-- Hits with the same taxonomy are dereplicated.
-- Hits are adjusted according to thresholds (default: species >=98%, genus >=95%, family >=90%, order >=85%) and dereplicated.
-- Hits with still conflicting taxonomy are set back to the most recent common taxonomy
-- OTU without matches in the blastn search are re-added as 'No Match'
-
-* The results are collected and written to an new Excel file.
-
-<pre>
-├───test_data_OTUs.fasta
-└───test_data_OTUs
-    ├───IDs.txt
-    ├───log.txt
-    ├───test_data_OTUs_taxonomy.xlsx  <-- Filtered taxonomic identification results!
-    ├───test_data_OTUs.parquet.snappy
-    └───subsets
-        ├───subset_1_blastn_filtered.xlsx
-        ├───subset_1_blastn.csv
-        ├───subset_2_blastn_filtered.xlsx
-        ├───subset_2_blastn.csv
-        ├───subset_3_blastn_filtered.xlsx
-        ├───subset_3_blastn.csv
-        ├───subset_4_blastn_filtered.xlsx
-        └───subset_4_blastn.csv
-</pre>
-
-## Options
-
-### apscale_blast blastn
-
-options:
-
-  -h, --help -> show this help message and exit
-  
-  -database DATABASE -> PATH to blastn database.
-  
-  -apscale_gui APSCALE_GUI -> Can be ignored: Only required for APSCALE-GUI.
-  
-  -blastn_exe BLASTN_EXE -> PATH to blast executable. [DEFAULT: blastn]
-  
-  -query_fasta QUERY_FASTA -> PATH to fasta file.
-  
-  -n_cores N_CORES -> Number of cores to use. [DEFAULT: CPU count - 1]
-  
-  -task TASK -> Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]
-  
-  -out OUT -> PATH to output directory. A new folder will be created here. [DEFAULT: ./]
-  
-  -subset_size SUBSET_SIZE -> Number of sequences for each subset of the query fasta. [DEFAULT: 100]
-                        
-  -max_target_seqs MAX_TARGET_SEQS -> Number of hits retained from the blast search. Larger numbers will increase runtimes and required storage space [DEFAULT: 20]
-
-
-### apscale_blast filter
-
-options:
-
-  -h, --help -> show this help message and exit
-  
-  -database DATABASE -> PATH to blastn database.
-  
-  -apscale_gui APSCALE_GUI -> Can be ignored: Only required for APSCALE-GUI.
-  
-  -blastn_folder BLASTN_FOLDER -> PATH to blastn folder for filtering.
-  
-  -thresholds THRESHOLDS -> Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
-  
-  -n_cores N_CORES -> Number of cores to use. [DEFAULT: CPU count - 1]
-
-
-## Benchmark
-
-### v1.0.2 with db release 2024_09
-
-![image](https://github.com/TillMacher/apscale_blast/blob/main/benchmarks/2024_09_benchmark.png?raw=true)
-
 
 
