@@ -88,21 +88,17 @@ Rimet, F., Gusev, E., Kahlert, M., Kelly, M. G., Kulikovskiy, M., Maltsev, Y., M
 
 ## How to use
 
-#### Pip installation
+#### Start
 
-* Open a terminal, powershell, or command line window. Then, execute the following command:
+* Open a terminal, powershell, or command line window. To view the help page type:
 
-`apscale_blast blastn`
+`apscale_blast -h`
 
-#### Executable
+#### Blastn search & filtering
 
-* Open a terminal, powershell, or command line window. Navigate to the folder where the executable is located. Then, execute the following command:
+* Apscale blast can be initialized by calling:
 
-Windows: `./apscale_blast.exe blastn`
-
-MacOS: `./apscale_blast blastn`
-
-#### Blastn search
+`apscale_blast`
 
 * You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
 
@@ -131,27 +127,7 @@ MacOS: `./apscale_blast blastn`
         └───subset_4_blastn.csv
 </pre>
 
-#### Blastn results filtering
-
-* Execute apscale-blast again and call the filter module:
-
-`apscale_blast filter`
-
-or 
-
-Windows: `./apscale_blast.exe filter`
-
-MacOS: `./apscale_blast filter`
-
-* You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/MIDORI2_UNIQ_NUC_GB260_srRNA_BLAST`
-
-* Next, you will be asked to provide the FULL PATH to the output folder that contains the unfiltered blastn results. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/test_data_OTUs`
-
-* Apscale-blast will now filter the blastn results according to the following criteria:
+* Apscale-blast will automatically filter the blastn results according to the following criteria:
   
 - By e-value (the e-value is the number of expected hits of similar quality which could be found just by chance):
 - The hit(s) with the lowest e-value are kept (the lower the e-value the better).
@@ -187,43 +163,31 @@ MacOS: `./apscale_blast filter`
 
 options:
 
-  -h, --help -> show this help message and exit
-  
-  -database DATABASE -> PATH to blastn database.
-  
-  -apscale_gui APSCALE_GUI -> Can be ignored: Only required for APSCALE-GUI.
-  
-  -blastn_exe BLASTN_EXE -> PATH to blast executable. [DEFAULT: blastn]
-  
-  -query_fasta QUERY_FASTA -> PATH to fasta file.
-  
-  -n_cores N_CORES -> Number of cores to use. [DEFAULT: CPU count - 1]
-  
-  -task TASK -> Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]
-  
-  -out OUT -> PATH to output directory. A new folder will be created here. [DEFAULT: ./]
-  
-  -subset_size SUBSET_SIZE -> Number of sequences for each subset of the query fasta. [DEFAULT: 100]
-                        
-  -max_target_seqs MAX_TARGET_SEQS -> Number of hits retained from the blast search. Larger numbers will increase runtimes and required storage space [DEFAULT: 20]
+-h, --help: show this help message and exit
 
+-database DATABASE, -db DATABASE: PATH to local database. Use "remote" to blast against the complete GenBank database (might be slow)
 
-### apscale_blast filter
+-blastn_exe BLASTN_EXE: PATH to blast executable. [DEFAULT: blastn]
 
-options:
+-query_fasta QUERY_FASTA, -q QUERY_FASTA: PATH to fasta file.
 
-  -h, --help -> show this help message and exit
-  
-  -database DATABASE -> PATH to blastn database.
-  
-  -apscale_gui APSCALE_GUI -> Can be ignored: Only required for APSCALE-GUI.
-  
-  -blastn_folder BLASTN_FOLDER -> PATH to blastn folder for filtering.
-  
-  -thresholds THRESHOLDS -> Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
-  
-  -n_cores N_CORES -> Number of cores to use. [DEFAULT: CPU count - 1]
+-n_cores N_CORES: Number of CPU cores to use. [DEFAULT: CPU count - 1]
 
+-task TASK: Blastn task: blastn, megablast, or dc-megablast. [DEFAULT: blastn]
+
+-out OUT, -o OUT: PATH to output directory. A new folder will be created here. [DEFAULT: ./]
+
+-subset_size SUBSET_SIZE: Number of sequences per query fasta subset. [DEFAULT: 100]
+
+-max_target_seqs MAX_TARGET_SEQS: Number of hits retained from the blast search. Larger values increase runtimes and storage needs. [DEFAULT: 20]
+
+-masking MASKING: Activate masking [DEFAULT="Yes"]
+
+-thresholds THRESHOLDS: Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
+
+-headless HEADLESS    Hide the Chromium browser during the remote blast [DEFAULT: True]
+
+-update_taxids, -u    Update NCBI taxid backbone
 
 ## Benchmark
 
