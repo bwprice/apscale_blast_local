@@ -27,6 +27,7 @@ import xmltodict
 import random
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+from tqdm import tqdm
 
 # Lock for thread-safe print statements
 print_lock = threading.Lock()
@@ -45,7 +46,7 @@ def fasta_subset(fasta_file, subset_size):
     Returns:
         Path: Path to the directory containing the subsets.
     """
-    print('{} : Creating subset(s) from fasta file.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
+    print('{}: Creating subset(s) from fasta file.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
     subset_size = int(subset_size)
     fasta_file = Path(fasta_file)
@@ -78,7 +79,7 @@ def fasta_subset(fasta_file, subset_size):
             else:
                 n += 1
 
-    print('{} : Created {} subset(s) from fasta file.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i))
+    print('{}: Created {} subset(s) from fasta file.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i))
     return subset_folder
 
 def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
@@ -175,7 +176,7 @@ def json_to_csv(json_data, blastn_json_path):
     os.remove(temp_path)
     os.remove(blastn_json_path)
 
-def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs, masking, headless, tmp_folder):
+def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_folder, i, print_lock, task, max_target_seqs, masking, headless, tmp_folder, organism_mask, include_uncultured):
 
     print('{}: Starting remote blast for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1, n_subsets))
 
@@ -198,6 +199,12 @@ def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_fol
             print('{}: Skipping {} (already exists and is not empty).'.format(datetime.datetime.now().strftime('%H:%M:%S'),
                                                              blastn_csv.stem))
     else:
+
+        # headless = 'False'
+        # query = 'ACGT'
+        # blastn_subset_folder = '/Users/tillmacher/Desktop/APSCALE_projects/test_apscale/8_esv_table/quatsch_tax'
+        # i = 1
+
         with sync_playwright() as p:
             # Launch the browser
             if headless == "True":
@@ -224,7 +231,29 @@ def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_fol
             # 1) Paste the query sequence into the input textarea
             textarea_selector = "#seq"
             page.fill(textarea_selector, query)
-            time.sleep(random.randrange(5,15))
+            time.sleep(random.randrange(1,5))
+
+            # 1.1) Paste the organism to include in the input area
+            c = 0
+            for mask in organism_mask:
+                if c == 0:
+                    textarea_selector = '#qorganism'
+                    page.fill(textarea_selector, mask)
+                    c += 1
+                else:
+                    page.wait_for_selector("#addOrg", state="visible")  # Ensure it's visible
+                    page.click("#addOrg")
+                    textarea_selector = f'#qorganism{c}'
+                    page.fill(textarea_selector, mask)
+                    c+=1
+
+
+            # 1.2) Select to exclude unculured samples sequences
+            if include_uncultured == False:
+                exclude_uncultured_selector = "label[for='exclSeqUncult']"
+                page.click(exclude_uncultured_selector)
+
+            time.sleep(random.randrange(1,5))
 
             # Step 2: Choose "discontiguous megablast"
             available_algorithms = {'megablast': 'megaBlast', 'dc-megablast': 'discoMegablast', 'blastn': 'blastn'}
@@ -238,7 +267,7 @@ def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_fol
             # Verify that the radio button is selected
             radio_button_selector = f"input#{selected_algorithm}"
             radio_button = page.locator(radio_button_selector)
-            time.sleep(random.randrange(5,15))
+            time.sleep(random.randrange(1,5))
 
             # 3) Run BLAST
             blast_button_selector = "#blastButton1 > input.blastbutton"
@@ -333,6 +362,7 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
         with print_lock:
             print('{}: Finished blastn for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1,
                                                                  n_subsets))
+
     else:
         # Run the BLASTN command
         subprocess.call([blastn_exe, '-task', task, '-db', str(db_folder), '-query', str(fasta_file),
@@ -342,7 +372,7 @@ def blastn_parallel(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_
             print('{}: Finished blastn for subset {}/{}.'.format(datetime.datetime.now().strftime('%H:%M:%S'), i + 1,
                                                                  n_subsets))
 
-def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, headless, gui):
+def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task, subset_size, max_target_seqs, masking, headless, gui, organism_mask, include_uncultured):
     """
     Improved BLASTN function that utilizes multithreading for faster performance.
 
@@ -402,7 +432,7 @@ def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task
             today = datetime.datetime.now().strftime('%D').replace('/', '_')
             n_runs = len(glob.glob(str(tmp_folder.joinpath(f'{today}*.txt'))))
 
-            if n_runs > 20 and not do_not_ask_again:
+            if n_runs > limit and not do_not_ask_again:
                 print('')
                 print(f"{datetime.datetime.now().strftime('%H:%M:%S')}: More than {n_runs} remote blasts have been requested today!")
                 print("  It is advised to continue blasting tomorrow to prevent penalties on the IP address!")
@@ -438,9 +468,11 @@ def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task
                     max_target_seqs,
                     masking,
                     headless,
-                    tmp_folder
+                    tmp_folder,
+                    organism_mask,
+                    include_uncultured
                 )
-                print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Conducted {n_runs+1}/20 remote blasts today.')
+                print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Conducted {n_runs+1}/{limit} remote blasts today.')
 
     else:
         print('{}: Your database: {}'.format(datetime.datetime.now().strftime('%H:%M:%S'), Path(blastn_database).stem))
@@ -451,8 +483,15 @@ def main(blastn_exe, query_fasta, blastn_database, project_folder, n_cores, task
 
     # Write log file with database and task information
     with open(project_folder.joinpath('log.txt'), 'w') as f:
-        f.write('Your database: {}\n'.format(Path(blastn_database).stem))
-        f.write('Your task: {}\n'.format(task))
+            f.write(f'Blast executable:   {blastn_exe}\n')
+            f.write(f'Blast database:     {blastn_database}\n')
+            f.write(f'Output folder:      {project_folder}\n')
+            f.write(f'Task:               {task}\n')
+            f.write(f'Subset size:        {subset_size}\n')
+            f.write(f'Max. target seq:    {max_target_seqs}\n')
+            f.write(f'Masking:            {masking}\n')
+            f.write(f'Organism mask:      {organism_mask}\n')
+            f.write(f'Exclude uncultured: {include_uncultured}\n')
 
     # Write OTU report
     with open(project_folder.joinpath('IDs.txt'), 'w') as f:

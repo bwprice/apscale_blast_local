@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="apscale_blast", # Replace with your own username
-    version="1.2.0",
+    version="1.2.2",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
     description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application",
@@ -22,6 +22,7 @@ setuptools.setup(
                     'numpy',
                     'pandas >= 2.2.2',
                     'pyarrow >= 16.1.0',
+                    'xmltodict >= 0.14.2'
                       ],
     include_package_data=True,
     classifiers=[

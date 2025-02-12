@@ -411,7 +411,7 @@ def main(blastn_folder, blastn_database, thresholds, n_cores):
     csv_files = glob.glob('{}/subsets/*.csv'.format(blastn_folder))
 
     ## check if a dbDNA database was used
-    if "_dbDNA" in blastn_database:
+    if "_dbDNA" in str(blastn_database):
         # PARALLEL FILTER COMMAND
         n_subsets = len(csv_files)
         Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blast_csvs_dbDNA)(file, i, n_subsets, thresholds) for i, file in enumerate(csv_files))
