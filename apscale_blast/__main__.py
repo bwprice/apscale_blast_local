@@ -80,6 +80,7 @@ def main():
     advanced_settings.add_argument('-blastn_exe', type=str, default='blastn', help='PATH to blast executable. [DEFAULT: blastn]')
     advanced_settings.add_argument('-masking', type=str, default='Yes', help='Activate masking. [DEFAULT="Yes"]')
     advanced_settings.add_argument('-gui', action='store_true', help='Only required for Apscale-GUI.')
+    advanced_settings.add_argument('-headless', action='store_false', help='Show/hide the chromium browser')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -110,7 +111,7 @@ def main():
     project_folder = args.out  # Use the output directory specified by the user
 
     # Handle the 'blastn' command
-    headless = "True"
+    headless = args.headless
     continue_blast = False
 
     # Convert db to Path

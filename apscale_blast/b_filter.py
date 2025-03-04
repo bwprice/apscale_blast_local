@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 from ete3 import NCBITaxa, Tree
 import requests
 import xmltodict
+from tqdm import tqdm
 
 # Lock for thread-safe print statements
 print_lock = threading.Lock()
@@ -460,19 +461,22 @@ def main(blastn_folder, blastn_database, thresholds, n_cores):
         df_list = []
 
         # Loop through the list of xlsx files
-        for file in xlsx_files:
+        print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Collecting {len(xlsx_files)} filtered subsets.')
+        for file in tqdm(xlsx_files):
             # Read each xlsx file into a DataFrame
             df = pd.read_excel(file).fillna('')
             # Append the DataFrame to the list
             df_list.append(df)
 
         # Concatenate all the DataFrames in the list into one DataFrame
+        print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Concatenating subsets.')
         merged_df = pd.concat(df_list, ignore_index=True)
         name = Path(blastn_folder).name
         blastn_filtered_xlsx = Path('{}/{}_taxonomy.xlsx'.format(blastn_folder, name))
 
         ## add OTUs without hit
         # Drop duplicates in the DataFrame
+        print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Dropping duplicates.')
         merged_df = merged_df.drop_duplicates()
         output_df_list = []
 
@@ -481,7 +485,8 @@ def main(blastn_folder, blastn_database, thresholds, n_cores):
         IDs = [i.rstrip() for i in ID_list.open()]
 
         # Check if each ID is already in the DataFrame
-        for ID in IDs:
+        print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Constructing taxonomy table.')
+        for ID in tqdm(IDs):
             if ID not in merged_df['unique ID'].values.tolist():
                 # Create a new row with the ID and other relevant information
                 row = [ID] + NoMatch
@@ -491,8 +496,9 @@ def main(blastn_folder, blastn_database, thresholds, n_cores):
                 output_df_list.append(row)
 
         ## sort table
-        merged_df.columns.tolist()
+        print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Saving taxonomy table...')
 
+        merged_df.columns.tolist()
         output_df = pd.DataFrame(output_df_list, columns=merged_df.columns.tolist())
         output_df['Status'] = 'apscale blast'
         output_df.to_excel(blastn_filtered_xlsx, sheet_name='Taxonomy table', index=False)

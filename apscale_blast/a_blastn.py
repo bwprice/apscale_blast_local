@@ -207,10 +207,7 @@ def remote_blast(fasta_file, n_subsets, blastn_subset_folder, blastn_exe, db_fol
 
         with sync_playwright() as p:
             # Launch the browser
-            if headless == "True":
-                browser = p.chromium.launch(headless=True)
-            else:
-                browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(headless=headless)
             context = browser.new_context()
 
             # Create a new page
