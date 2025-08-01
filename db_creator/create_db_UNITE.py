@@ -85,8 +85,8 @@ def run_unite(output_path, fasta_file):
     print('{} : Finished to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
 ## Variables
-output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09'
-files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/UNITE/*.fasta*')
+output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2025_07'
+files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2025_07_fasta/UNITE/*.fasta*')
 
 for fasta_file in files:
     ## Run

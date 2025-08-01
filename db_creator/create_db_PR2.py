@@ -86,8 +86,8 @@ def run_pr2(output_path, fasta_file):
     print('{} : Finished to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
 ## Variables
-output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09'
-files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/PR2/*.fasta*')
+output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2025_07'
+files = glob.glob('/Volumes/Coruscant/APSCALE_raw_databases/2025_07_fasta/PR2/*.fasta*')
 
 for fasta_file in files:
     ## Run

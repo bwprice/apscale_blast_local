@@ -54,8 +54,8 @@ def run_diat_barcode(output_path, diat_barcode_xlsx):
     print('{} : Finished to create database.'.format(datetime.datetime.now().strftime('%H:%M:%S')))
 
 ## Variables
-diat_barcode_xlsx = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09_fasta/DiatBarcode/2024-05-28-Diat.barcode_release-version 12.4.xlsx'
-output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2024_09'
+diat_barcode_xlsx = '/Volumes/Coruscant/APSCALE_raw_databases/2025_07_fasta/DiatBarcode/2024-05-28-Diat.barcode_release-version 12.4.xlsx'
+output_path = '/Volumes/Coruscant/APSCALE_raw_databases/2025_07'
 
 # Run
 run_diat_barcode(output_path, diat_barcode_xlsx)
