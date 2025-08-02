@@ -5,11 +5,11 @@ Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding dat
 
 [![Downloads](https://static.pepy.tech/badge/apscale-blast)](https://pepy.tech/project/apscale-blast)  - apscale_blast
 
-# apscale-blast
+# apscale-blast (HPC-compatible)
 
 ## Introduction
 Apscale-blast is part of the metabarcoding pipeline [apscale](https://github.com/DominikBuchner/apscale/tree/main) and is used
-for the taxonomic assignment of OTUs or ESVs.
+for the taxonomic assignment of OTUs or ESVs. This version is optimized for High-Performance Computing (HPC) environments.
 
 Programs used:
 * [blast+](https://blast.ncbi.nlm.nih.gov/doc/blast-help/downloadblastdata.html) (blastn module)
@@ -22,7 +22,7 @@ Output:
 
 ## Installation
 
-Apscale-blast can be installed on all common operating systems (Windows, Linux, MacOS).
+Apscale-blast can be installed on all common operating systems (Windows, Linux, MacOS) and is optimized for HPC clusters.
 Apscale-blast requires Python 3.10 or higher and can be easily installed via pip in any command line:
 
 `pip install apscale_blast`
@@ -32,6 +32,8 @@ To update apscale-blast run:
 `pip install --upgrade apscale_blast`
 
 The easiest installation option is the [Conda apscale environment](https://github.com/TillMacher/apscale_installer). This way, all dependencies will automatically be installed.
+
+**Note**: This HPC-compatible version supports only local BLAST databases. For web-based BLAST functionality, please use the original version with additional dependencies.
 
 ### Further dependencies - blast+
 
@@ -131,7 +133,7 @@ options:
 
 -h, --help: show this help message and exit
 
--database DATABASE, -db DATABASE: PATH to local database. Use "remote" to blast against the complete GenBank database (might be slow)
+-database DATABASE, -db DATABASE: PATH to local database.
 
 -blastn_exe BLASTN_EXE: PATH to blast executable. [DEFAULT: blastn]
 
@@ -150,19 +152,6 @@ options:
 -masking MASKING: Activate masking [DEFAULT="Yes"]
 
 -thresholds THRESHOLDS: Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]
-
--update_taxids, -u    Update NCBI taxid backbone
-
-
-## Remote blast
-
-_Apscale blast allows the automatical usage of the NCBI blastn webpage, including the filtering of raw hits and creation of taxonomy table._
-
-_NCBI Genbank is a public resource, so usage limitations apply to this script. Datasets that involve large numbers of BLAST searches should use one of the [provided local databases](https://github.com/TillMacher/apscale_blast?tab=readme-ov-file#available-databases)._
-
-_Requests will be rate-limited to 10 requests per day (1000 sequences) to avoid overloading the server._
-
-_Run the remote blast on weekends or between 9 pm and 5 am Eastern time on weekdays._
 
 
 ## Benchmark

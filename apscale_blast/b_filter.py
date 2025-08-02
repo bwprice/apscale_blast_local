@@ -13,9 +13,6 @@ from joblib import Parallel, delayed
 import threading
 import pyarrow as pa
 import pyarrow.parquet as pq
-from ete3 import NCBITaxa, Tree
-import requests
-import xmltodict
 from tqdm import tqdm
 
 # Lock for thread-safe print statements
@@ -42,21 +39,6 @@ def accession2taxonomy(df_1, taxid_dict, col_names_2, db_name):
         df_2_list.append([ID_name] + taxonomy + [similarity, evalue])
     df_2 = pd.DataFrame(df_2_list, columns=col_names_2)
     return df_2
-
-def ncbi_taxid_request(taxid):
-    desired_ranks = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-    try:
-        ncbi = NCBITaxa()
-        lineage = ncbi.get_lineage(taxid)
-        lineage2ranks = ncbi.get_rank(lineage)
-        ranks2lineage = dict((rank, taxid) for (taxid, rank) in lineage2ranks.items())
-        results = {'{}_id'.format(rank): ranks2lineage.get(rank, '<not present>') for rank in desired_ranks}
-        taxids = [str(taxid) for taxid in list(results.values())]
-        taxonomy = [list(ncbi.get_taxid_translator([taxid]).values())[0] for taxid in taxids]
-        return taxonomy
-    except ValueError:
-        taxonomy_placeholder = f'Unknown taxid {str(taxid)}'
-        return [taxonomy_placeholder] * 7
 
 def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
     """
@@ -112,21 +94,7 @@ def filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name):
 
         ############################################################################################################
         ## convert fasta headers to taxonomy
-        if db_name != 'remote':
-            df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2, db_name)
-        else:
-            df_2_values = []
-            for row in df_1.values.tolist():
-                taxid = row[1]
-                taxonomy = ncbi_taxid_request(taxid)
-                df_2_values.append([row[0]] + taxonomy + row[2:])
-            df_2 = pd.DataFrame(df_2_values, columns=col_names_2)
-
-        ## Filter out missing taxids
-        if df_2['Species'].str.contains(r'\bUnknown taxid\b', na=False).any():
-            df_2_reduced = df_2.loc[~df_2['Species'].str.contains(r'\bUnknown taxid\b', na=False)]
-            if len(df_2_reduced) != 0:
-                df_2 = df_2_reduced.copy()
+        df_2 = accession2taxonomy(df_1, taxid_dict, col_names_2, db_name)
 
         ############################################################################################################
 
@@ -421,27 +389,18 @@ def main(blastn_folder, blastn_database, thresholds, n_cores):
         NoMatch = ["No Match"] * 6 + [0] * 2 + ['']*17
     else:
 
-        if blastn_database != 'remote':
-            ## load taxid table
-            taxid_table = Path(blastn_database).joinpath('db_taxonomy.parquet.snappy')
-            taxid_df = pd.read_parquet(taxid_table).fillna('')
-            taxid_dict = {i[0]:i[1::] for i in taxid_df.values.tolist()}
-            ## collect name of database
-            db_name = Path(blastn_database).stem
-        else:
-            ## remote blast does not require the taxid_dict, but it must be defined anyways
-            taxid_dict = {}
-            ## collect name of databaseU
-            db_name = "remote"
+        ## load taxid table
+        taxid_table = Path(blastn_database).joinpath('db_taxonomy.parquet.snappy')
+        taxid_df = pd.read_parquet(taxid_table).fillna('')
+        taxid_dict = {i[0]:i[1::] for i in taxid_df.values.tolist()}
+        ## collect name of database
+        db_name = Path(blastn_database).stem
 
         # PARALLEL FILTER COMMAND
         n_subsets = len(csv_files)
         # file = csv_files[2]
         # i = 0
-        if blastn_database != 'remote':
-            Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files))
-        else:
-            [filter_blastn_csvs(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files)]
+        Parallel(n_jobs = n_cores, backend='threading')(delayed(filter_blastn_csvs)(file, taxid_dict, i, n_subsets, thresholds, db_name) for i, file in enumerate(csv_files))
 
         ## also already define the no match row
         NoMatch = ['NoMatch'] * 7 + [0, 1, '', '']

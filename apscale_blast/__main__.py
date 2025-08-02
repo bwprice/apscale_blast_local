@@ -6,32 +6,6 @@ import datetime
 from pathlib import Path
 from apscale_blast.a_blastn import main as a_blastn
 from apscale_blast.b_filter import main as b_filter
-from ete3 import NCBITaxa, Tree
-
-def organism_filter(name):
-    try:
-        name = int(name)
-    except ValueError:
-        pass
-    if isinstance(name, int):
-        try:
-            # Initialize NCBITaxa database
-            ncbi = NCBITaxa()
-            res = ncbi.get_taxid_translator([name])
-            organism = f'{res[name]} (taxid:{name})'
-            return organism
-        except:
-            return f'{name} not found!'
-    else:
-        try:
-            # Initialize NCBITaxa database
-            ncbi = NCBITaxa()
-            res = ncbi.get_name_translator([name])
-            taxid = res[name][-1]
-            organism = f'{name} (taxid:{taxid})'
-            return organism
-        except:
-            return f'{name} not found!'
 
 def main():
     """
@@ -41,23 +15,19 @@ def main():
 
     # Introductory message with usage examples
     message = """
-    APSCALE blast command line tool - v1.2.2
+    APSCALE blast command line tool - v1.3.0 (HPC-compatible)
     Example commands:
     $ apscale_blast -h
-    $ apscale_blast -db ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -q ./12S_apscale_ESVs.fasta -f Vertebrata
-    
-    Remember to update your local ete3 NCBI taxonomy regularly, if using the "remote" blastn!
-    This can be performed by running:
-    $ apscale_blast -u
+    $ apscale_blast -db ./MIDORI2_UNIQ_NUC_GB259_srRNA_BLAST -q ./12S_apscale_ESVs.fasta
     """
     print(message)
 
     # Initialize the argument parser
-    parser = argparse.ArgumentParser(description='APSCALE blast v1.2.2')
+    parser = argparse.ArgumentParser(description='APSCALE blast v1.3.0 (HPC-compatible)')
 
     # === Main settings ===
     main_settings = parser.add_argument_group("Main settings")
-    main_settings.add_argument('-database', '-db', type=str, required=False, help='PATH to local database. Use "remote" to blast against GenBank (slow).')
+    main_settings.add_argument('-database', '-db', type=str, required=False, help='PATH to local database.')
     main_settings.add_argument('-query_fasta', '-q', type=str, help='PATH to fasta file.')
     main_settings.add_argument('-out', '-o', type=str, default='./', help='PATH to output directory. A new folder will be created here. [DEFAULT: ./]')
 
@@ -69,32 +39,14 @@ def main():
     general_settings.add_argument('-max_target_seqs', type=int, default=20, help='Number of hits retained from the blast search. [DEFAULT: 20]')
     general_settings.add_argument('-thresholds', type=str, default='97,95,90,87,85', help='Taxonomy filter thresholds. [DEFAULT: 97,95,90,87,85]')
 
-    # === Remote blast settings ===
-    remote_blast = parser.add_argument_group("Remote blast settings")
-    remote_blast.add_argument('-update_taxids', '-u', action='store_true', help='Update NCBI taxid backbone.')
-    remote_blast.add_argument('-organism_filter', '-f', type=str, help='Comma-separated list of taxids or full names for remote blast filtering (e.g., "Mammalia,Actinopteri").')
-    remote_blast.add_argument('-include_uncultured', action='store_true', help='Include uncultured/environmental sample sequences in the remote blast (excluded by default).')
-
     # === Advanced settings ===
     advanced_settings = parser.add_argument_group("Advanced settings")
     advanced_settings.add_argument('-blastn_exe', type=str, default='blastn', help='PATH to blast executable. [DEFAULT: blastn]')
     advanced_settings.add_argument('-masking', type=str, default='Yes', help='Activate masking. [DEFAULT="Yes"]')
     advanced_settings.add_argument('-gui', action='store_true', help='Only required for Apscale-GUI.')
-    advanced_settings.add_argument('-headless', action='store_false', help='Show/hide the chromium browser')
 
     # Parse the arguments
     args = parser.parse_args()
-
-    # Handle taxonomy update
-    if args.update_taxids:
-        print("Updating NCBI taxonomy database...")
-        ncbi = NCBITaxa()
-        ncbi.update_taxonomy_database()
-        print("Taxonomy database updated successfully.")
-        if Path('./taxdump.tar.gz').exists():
-            os.remove('./taxdump.tar.gz')
-            print('Removed taxdmup.tar.gz')
-        return  # Exit after updating taxonomy
 
     # Handle missing arguments interactively for both commands
     if not args.database and not args.query_fasta:
@@ -111,32 +63,10 @@ def main():
     project_folder = args.out  # Use the output directory specified by the user
 
     # Handle the 'blastn' command
-    headless = args.headless
     continue_blast = False
 
     # Convert db to Path
     database = Path(args.database.strip('"'))
-    if str(database) == 'remote':
-        database = 'remote'
-
-    if database == 'remote' and not args.organism_filter:
-        print('\nError: Remote blast requires at least one organism to filter for!')
-        print('Example: -f Mammalia, Actinopteri')
-        return
-
-    organism_mask = []
-    if database == 'remote':
-        for organism in args.organism_filter.replace(' ', '').split(','):
-            organism_mask.append(organism_filter(organism))
-
-        if len(organism_mask) != 0:
-            print(f'{datetime.datetime.now().strftime("%H:%M:%S")}: Filtering remote blast for {len(organism_mask)} organism(s):')
-            for mask in organism_mask:
-                if 'not found!' in mask:
-                    print(f'  Error: Please check your input: {mask}\n')
-                    return
-                else:
-                    print(f'  {mask}')
 
     if args.query_fasta:
         # Run the BLASTn function
@@ -149,14 +79,13 @@ def main():
                  args.subset_size,
                  args.max_target_seqs,
                  args.masking,
-                 headless,
+                 False,  # headless (no longer used)
                  args.gui,
-                 organism_mask,
-                 args.include_uncultured
+                 [],     # organism_mask (no longer used)
+                 False   # include_uncultured (no longer used)
                                   )
     else:
         print('\nError: Please provide a fasta file!')
-
     # Handle the 'filter' command
     if continue_blast == False:
         print('\nNot all fasta subsets have been processed yet!')

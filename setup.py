@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="apscale_blast", # Replace with your own username
-    version="1.2.7",
+    version="1.3.0",
     author="Till-Hendrik Macher",
     author_email="macher@uni-trier.de",
-    description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application",
+    description="Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data - BLAST application (HPC-compatible)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://pypi.org/project/apscale_blast/",
@@ -18,11 +18,10 @@ setuptools.setup(
                     'Bio >= 1.7.1',
                     'biopython >= 1.84',
                     'joblib >= 1.4.2',
-                    'ete3 >= 3.1.3',
                     'numpy',
                     'pandas >= 2.2.2',
                     'pyarrow >= 16.1.0',
-                    'xmltodict >= 0.14.2'
+                    'tqdm'
                       ],
     include_package_data=True,
     classifiers=[

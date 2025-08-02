@@ -1,2 +1,7 @@
 
 .DS_Store
+/apscale_blast/__pycache__
+remove_remote_blast_analysis.md
+apscale_blast_pipeline_flow.md
+hpc_implementation_plan.md
+/apscale_blast.egg-info
