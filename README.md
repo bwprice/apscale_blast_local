@@ -53,7 +53,7 @@ IMPORTANT: Please cite the used database accordingly!
 
 #### Blastn search & filtering
 
-* Apscale blast can be run using the SLURM script if your HPC uses SLURM
+* Apscale blast can be run using the [SLURM SCRIPT] (https://github.com/bwprice/apscale_blast_local/blob/main/sh_apscale_blast_slurm.sh) script if your HPC uses SLURM
 
 * Apscale-blast will split your fasta into smaller subsets [DEFAULT: 100].
   
