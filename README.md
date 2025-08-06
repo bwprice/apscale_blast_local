@@ -1,15 +1,11 @@
 # apscale
 Advanced Pipeline for Simple yet Comprehensive AnaLysEs of DNA metabarcoding data
 
-[![Downloads](https://static.pepy.tech/badge/apscale)](https://pepy.tech/project/apscale)  - apscale
-
-[![Downloads](https://static.pepy.tech/badge/apscale-blast)](https://pepy.tech/project/apscale-blast)  - apscale_blast
-
-# apscale-blast (HPC-compatible)
+# apscale_blast (HPC-compatible)
 
 ## Introduction
-Apscale-blast is part of the metabarcoding pipeline [apscale](https://github.com/DominikBuchner/apscale/tree/main) and is used
-for the taxonomic assignment of OTUs or ESVs. This version is optimized for High-Performance Computing (HPC) environments.
+Apscale_blast is part of the metabarcoding pipeline [apscale](https://github.com/DominikBuchner/apscale/tree/main) and is used
+for the taxonomic assignment of OTUs or ESVs. This version is optimized for local blast on High-Performance Computing (HPC) environments.
 
 Programs used:
 * [blast+](https://blast.ncbi.nlm.nih.gov/doc/blast-help/downloadblastdata.html) (blastn module)
@@ -22,22 +18,15 @@ Output:
 
 ## Installation
 
-Apscale-blast can be installed on all common operating systems (Windows, Linux, MacOS) and is optimized for HPC clusters.
-Apscale-blast requires Python 3.10 or higher and can be easily installed via pip in any command line:
+Apscale_blast requires Python 3.10 or higher and can be easily installed via pip in any command line:
 
-`pip install apscale_blast`
-
-To update apscale-blast run:
-
-`pip install --upgrade apscale_blast`
-
-The easiest installation option is the [Conda apscale environment](https://github.com/TillMacher/apscale_installer). This way, all dependencies will automatically be installed.
+`pip install -e apscale_blast_local/`
 
 **Note**: This HPC-compatible version supports only local BLAST databases. For web-based BLAST functionality, please use the original version with additional dependencies.
 
 ### Further dependencies - blast+
 
-Apscale-blast calls blast+ (blastn) in the background. It should be installed and be in PATH to be executed
+Apscale_blast calls blast+ (blastn) in the background. It should be installed and be in PATH to be executed
 from anywhere on the system. However, a PATH to the executable can also be provided within the command.
 
 You can find the latest blast+ executables and further information on the installation [here](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/).
@@ -48,7 +37,7 @@ Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., &
 
 ## Available databases
 
-Apscale-blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using [these scripts](https://github.com/TillMacher/apscale_blast/tree/main/db_creator), which are used to create the pre-compiled databases.
+Apscale_blast uses pre-compiled databases. These databases will be tested and should prevent user-error. However, custom databases can also be created using [these scripts](https://github.com/TillMacher/apscale_blast/tree/main/db_creator), which are used to create the pre-compiled databases.
 
 The [pre-compiled databases are available under the following server](https://seafile.rlp.net/d/474b9682a5cb4193a6ad/) and will be updated regularly.
 
@@ -64,17 +53,7 @@ IMPORTANT: Please cite the used database accordingly!
 
 #### Blastn search & filtering
 
-* Apscale blast can be initialized by calling:
-
-`apscale_blast`
-
-* You will be asked to provide the FULL PATH to your database. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/MIDORI2_UNIQ_NUC_GB260_srRNA_BLAST`
-
-* Next, you will be asked to provide the FULL PATH to your query fasta file that contains the OTU/ESV sequences. Enter the PATH in the command line. For example:
-
-`/Users/tillmacher/Downloads/test_data_OTUs.fasta`
+* Apscale blast can be run using the SLURM script if your HPC uses SLURM
 
 * Apscale-blast will split your fasta into smaller subsets [DEFAULT: 100].
   
@@ -95,13 +74,13 @@ IMPORTANT: Please cite the used database accordingly!
         └───subset_4_blastn.csv
 </pre>
 
-* Apscale-blast will automatically filter the blastn results according to the following criteria:
+* Apscale_blast will automatically filter the blastn results according to the following criteria:
   
 - By e-value (the e-value is the number of expected hits of similar quality which could be found just by chance):
 - The hit(s) with the lowest e-value are kept (the lower the e-value the better).
 - By taxonomy:
 - Hits with the same taxonomy are dereplicated.
-- Hits are adjusted according to thresholds (default: species >=98%, genus >=95%, family >=90%, order >=85%) and dereplicated.
+- Hits are adjusted according to thresholds (default: species >=97%, genus >=95%, family >=90%, order >=87%) and dereplicated.
 - Hits with still conflicting taxonomy are set back to the most recent common taxonomy
 - OTU without matches in the blastn search are re-added as 'No Match'
 
